@@ -11,6 +11,10 @@
     {
       "id": 3,
       "name": "J.K. Rowling"
+    },
+    {
+      "id": 4,
+      "name": "kevin lang"
     }
   ],
   "books": [
@@ -42,10 +46,59 @@
       ]
     },
     {
+      "id": 5,
+      "title": "Harry good and the Philosopher's Stone",
+      "year": 1997,
+      "isbn": "9780747532699",
+      "authorIds": [
+        3
+      ]
+    },
+    {
       "id": 4,
       "title": "Good Omens",
       "year": 1990,
       "isbn": "9780060853983",
+      "authorIds": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Good Omens2",
+      "year": 1992,
+      "isbn": "97800602853983",
+      "authorIds": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Good Omens2",
+      "year": 1992,
+      "isbn": "97800602853983",
+      "authorIds": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Good Omens2",
+      "year": 1992,
+      "isbn": "97800602853983",
+      "authorIds": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": 8,
+      "title": "2323fdas",
+      "year": 1992,
+      "isbn": "97800602853983",
       "authorIds": [
         1,
         2
