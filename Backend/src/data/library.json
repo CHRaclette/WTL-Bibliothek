@@ -1,0 +1,55 @@
+{
+  "authors": [
+    {
+      "id": 1,
+      "name": "J.R.R. Tolkien"
+    },
+    {
+      "id": 2,
+      "name": "George Orwell"
+    },
+    {
+      "id": 3,
+      "name": "J.K. Rowling"
+    }
+  ],
+  "books": [
+    {
+      "id": 1,
+      "title": "The Hobbit",
+      "year": 1937,
+      "isbn": "9780547928227",
+      "authorIds": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "title": "1984",
+      "year": 1949,
+      "isbn": "9780451524935",
+      "authorIds": [
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Harry Potter and the Philosopher's Stone",
+      "year": 1997,
+      "isbn": "9780747532699",
+      "authorIds": [
+        3
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Good Omens",
+      "year": 1990,
+      "isbn": "9780060853983",
+      "authorIds": [
+        1,
+        2
+      ]
+    }
+  ]
+}
