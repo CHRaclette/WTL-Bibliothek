@@ -1,23 +1,22 @@
 const library = require("../services/library");
-const { randomUUID } = require("crypto");
+const { AppError, catchAsync } = require("../middleware/error");
 
-exports.getBooks = (req, res) => {
-  const data = req.app.locals.seed;
-  let books = data.books;
+
+exports.getBooks = catchAsync((req, res) => {
+  const db = req.app.locals.seed;
+  let books = db.books;
 
   const { title, authorName } = req.query;
 
-  
+
   if (title) {
     const lower = title.toLowerCase();
-    books = books.filter(b =>
-      b.title.toLowerCase().includes(lower)
-    );
+    books = books.filter(b => b.title.toLowerCase().includes(lower));
   }
 
   if (authorName) {
     const lower = authorName.toLowerCase();
-    const matchingAuthorIds = data.authors
+    const matchingAuthorIds = db.authors
       .filter(a => a.name.toLowerCase().includes(lower))
       .map(a => a.id);
 
@@ -28,52 +27,49 @@ exports.getBooks = (req, res) => {
 
   const result = books.map(book => ({
     ...book,
-    authors: data.authors.filter(a => book.authorIds.includes(a.id))
+    authors: db.authors.filter(a => book.authorIds.includes(a.id))
   }));
 
   res.json(result);
-};
+});
 
-
-exports.getBookById = (req, res) => {
-  const data = req.app.locals.seed;
+exports.getBookById = catchAsync((req, res) => {
+  const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: "Invalid id" });
+    return next(new SimpleError("Invalid ID", 400, "VALIDATION_ERROR"));
   }
 
-  const book = data.books.find(b => b.id === id);
-
+  const book = db.books.find(b => b.id === id);
   if (!book) {
-    return res.status(404).json({ error: "Book not found" });
+    throw new AppError("Book not found", 404, "BOOK_NOT_FOUND", { id });
   }
 
-  const authors = data.authors.filter(a => book.authorIds.includes(a.id));
+  const authors = db.authors.filter(a => book.authorIds.includes(a.id));
 
   return res.json({ ...book, authors });
-};
+});
 
 
-
-exports.createBook = (req, res) => {
-  const db = req.app.locals.seed; 
+exports.createBook = catchAsync((req, res) => {
+  const db = req.app.locals.seed;
   const { title, year, isbn, authorIds } = req.body;
 
+
   if (!title || !year || !isbn || !Array.isArray(authorIds)) {
-    return res.status(400).json({
-      error: "title, year, isbn and authorIds[] are required",
-      received: req.body
-    });
+    throw new SimpleError(
+      "title, year, isbn and authorIds[] are required",
+      400,
+      "VALIDATION_ERROR",
+      { body: req.body }
+    );
   }
 
 
   const invalid = authorIds.filter(id => !db.authors.find(a => a.id === id));
   if (invalid.length > 0) {
-    return res.status(400).json({
-      error: "Some authorIds do not exist",
-      invalid
-    });
+    throw new AppError("Some authorIds do not exist", 400, "INVALID_AUTHOR_IDS", { invalid });
   }
 
   const nextId = (db.books.at(-1)?.id ?? 0) + 1;
@@ -81,76 +77,75 @@ exports.createBook = (req, res) => {
   const newBook = {
     id: nextId,
     title,
-    year,
+    year: Number(year),
     isbn,
-    authorIds
+    authorIds: authorIds.map(Number)
   };
 
   db.books.push(newBook);
-  library.save(db);   
+  library.save(db);
 
-  return res.status(201).json(newBook);
-};
+  res.status(201).json(newBook);
+});
 
-
-
-exports.deleteBook = (req, res) => {
+exports.deleteBook = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: "Invalid id" });
+    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR");
   }
 
   const index = db.books.findIndex(b => b.id === id);
-
   if (index === -1) {
-    return res.status(404).json({ error: "Book not found" });
+    throw new AppError("Book not found", 404, "BOOK_NOT_FOUND");
   }
 
   const deleted = db.books.splice(index, 1)[0];
-
-  library.save(db);   
+  library.save(db);
 
   return res.json({
     message: "Book deleted",
     book: deleted
   });
-};
+});
 
 
-exports.patchBook = (req, res) => {
+exports.patchBook = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: "Invalid id. Must be a number." });
+    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR");
   }
 
   const book = db.books.find(b => b.id === id);
   if (!book) {
-    return res.status(404).json({ error: "Book not found" });
+    throw new AppError("Book not found", 404, "BOOK_NOT_FOUND", { id });
   }
 
   const { title, year, isbn, authorIds } = req.body ?? {};
 
   if (title !== undefined && typeof title !== "string") {
-    return res.status(400).json({ error: "title must be a string" });
+    throw new AppError("title must be a string", 400, "VALIDATION_ERROR");
   }
+
   if (year !== undefined && Number.isNaN(Number(year))) {
-    return res.status(400).json({ error: "year must be a number" });
+    throw new AppError("year must be a number", 400, "VALIDATION_ERROR");
   }
+
   if (isbn !== undefined && typeof isbn !== "string") {
-    return res.status(400).json({ error: "isbn must be a string" });
+    throw new AppError("isbn must be a string", 400, "VALIDATION_ERROR");
   }
+
   if (authorIds !== undefined) {
     if (!Array.isArray(authorIds)) {
-      return res.status(400).json({ error: "authorIds must be an array of numbers" });
+      throw new AppError("authorIds must be an array of numbers", 400, "VALIDATION_ERROR");
     }
 
     const invalid = authorIds.filter(aid => !db.authors.find(a => a.id === Number(aid)));
     if (invalid.length > 0) {
-      return res.status(400).json({ error: "Invalid authorIds", invalid });
+      throw new AppError("Invalid authorIds", 400, "INVALID_AUTHOR_IDS", { invalid });
     }
   }
 
@@ -163,4 +158,4 @@ exports.patchBook = (req, res) => {
 
   const authors = db.authors.filter(a => book.authorIds.includes(a.id));
   return res.json({ ...book, authors });
-};
+});

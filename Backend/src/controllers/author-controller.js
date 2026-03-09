@@ -1,6 +1,8 @@
 const library = require("../services/library");
+const { AppError, catchAsync } = require("../middleware/error");
 
-exports.getAuthors = (req, res) => {
+
+exports.getAuthors = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   let authors = db.authors;
 
@@ -11,30 +13,31 @@ exports.getAuthors = (req, res) => {
   }
 
   res.json(authors);
-};
+});
 
-exports.getAuthorById = (req, res) => {
+exports.getAuthorById = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: "Invalid id. Must be a number." });
+    throw new AppError("Invalid id. Must be a number.", 400, "VALIDATION_ERROR");
   }
 
   const author = db.authors.find(a => a.id === id);
   if (!author) {
-    return res.status(404).json({ error: "Author not found" });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", { id });
   }
 
   return res.json(author);
-};
+});
 
-exports.createAuthor = (req, res) => {
+
+exports.createAuthor = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const { name } = req.body ?? {};
 
   if (!name || typeof name !== "string") {
-    return res.status(400).json({ error: "name is required and must be a string" });
+    throw new AppError("name is required and must be a string", 400, "VALIDATION_ERROR");
   }
 
   const nextId = (db.authors.at(-1)?.id ?? 0) + 1;
@@ -44,57 +47,60 @@ exports.createAuthor = (req, res) => {
   library.save(db);
 
   return res.status(201).json(newAuthor);
-};
+});
 
-exports.deleteAuthor = (req, res) => {
+
+exports.deleteAuthor = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: "Invalid id. Must be a number." });
+    throw new AppError("Invalid id. Must be a number.", 400, "VALIDATION_ERROR");
   }
 
   const index = db.authors.findIndex(a => a.id === id);
   if (index === -1) {
-    return res.status(404).json({ error: "Author not found" });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", { id });
   }
 
   const referencedBy = db.books.filter(b => b.authorIds.includes(id)).map(b => b.id);
   if (referencedBy.length > 0) {
-    return res.status(409).json({
-      error: "Author is referenced by existing books",
-      books: referencedBy
-    });
+    throw new AppError(
+      "Author is referenced by existing books",
+      409,
+      "AUTHOR_REFERENCED",
+      { bookIds: referencedBy }
+    );
   }
 
   const deleted = db.authors.splice(index, 1)[0];
   library.save(db);
 
   return res.json({ message: "Author deleted", author: deleted });
-};
+});
 
 
-exports.patchAuthor = (req, res) => {
+exports.patchAuthor = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: "Invalid id. Must be a number." });
+    throw new AppError("Invalid id. Must be a number.", 400, "VALIDATION_ERROR");
   }
 
   const author = db.authors.find(a => a.id === id);
   if (!author) {
-    return res.status(404).json({ error: "Author not found" });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", { id });
   }
 
   const { name } = req.body ?? {};
 
   if (name !== undefined && typeof name !== "string") {
-    return res.status(400).json({ error: "name must be a string" });
+    throw new AppError("name must be a string", 400, "VALIDATION_ERROR");
   }
 
   if (name !== undefined) author.name = name;
 
   library.save(db);
   return res.json(author);
-};
+});

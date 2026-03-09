@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const library = require('../Backend/src/services/library')
+const library = require('../Backend/src/services/library');
+const { notFound, errorHandler } = require('./src/middleware/error');
 
 app.use(express.json());
 app.use(cors({ origin: true, credentials: true }));
@@ -24,6 +25,8 @@ app.get('/api/health', (req, res) => {
   res.status(200).send('OK');
 });
 
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
