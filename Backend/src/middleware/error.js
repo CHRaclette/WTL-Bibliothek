@@ -1,4 +1,3 @@
-
 const { randomUUID } = require("crypto");
 
 class AppError extends Error {
@@ -9,8 +8,6 @@ class AppError extends Error {
     this.details = details;
   }
 }
-
-
 
 function notFound(req, res, next) {
   next(new AppError(`Route ${req.method} ${req.originalUrl} not found`, 404, "NOT_FOUND"));
@@ -25,11 +22,10 @@ function errorHandler(err, req, res, next) {
       code: err.code || "INTERNAL_ERROR",
       message: err.message || "Unexpected error",
       status,
-      details: err.details ?? null,
+      details: err.details ?? null
     }
   });
 }
-
 
 function catchAsync(fn) {
   return (req, res, next) => {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Container, Typography, CircularProgress, Box } from "@mui/material";
 
+import { Alert, AlertTitle } from "@mui/material";
 type Book = {
   id: number;
   title: string;
@@ -11,7 +12,13 @@ export function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
+  
+    const filteredBooks = books.filter((book) =>
+    book.title.toLowerCase().includes(query.toLowerCase())
+  );
+  
   useEffect(() => {
     (async () => {
       try {
@@ -41,27 +48,34 @@ export function HomePage() {
       </Box>
     );
 
-  if (error)
-    return (
-      <Container sx={{ py: 3 }}>
-        <Typography color="error">{error}</Typography>
-      </Container>
-    );
+
+    if (error)
+        return (
+          <Container sx={{ py: 3 }}>
+            <Alert severity="error">
+            <AlertTitle>Fehler</AlertTitle>
+            {error}
+            </Alert>
+            
+          </Container>
+        );
+      
 
   return (
     <Container sx={{ py: 3 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
         Bücher Übersicht
       </Typography>
-
-
+      
       {books.length === 0 && (
-        <Typography variant="body1" color="text.secondary">
-          Keine Bücher vorhanden.
-        </Typography>
-      )}
+  <>
 
-    
+    <Alert severity="warning" sx={{ mt: 2 }}>
+      <AlertTitle>Hinweis</AlertTitle>
+      Es sind aktuell keine Bücher vorhanden.
+    </Alert>
+  </>
+)}
       {books.length > 0 &&
         books.map((book) => (
           <Typography
@@ -72,6 +86,7 @@ export function HomePage() {
               fontSize: "1.2rem",
               mb: 2,
               display: "block",
+              width: "fit-content",
               textDecoration: "none",
               color: "primary.main",
               "&:hover": { textDecoration: "underline" },

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import AlertTitle from '@mui/material/AlertTitle';
+import Snackbar from '@mui/material/Snackbar';
 import {
   Alert,
   Box,
   CircularProgress,
   Container,
   Typography,
-} from '@mui/material';
+       }
+ from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { BookCard } from '../components/BookCard';
 type Author = {
@@ -70,6 +73,7 @@ function BooksPage() {
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
+            <AlertTitle>Fehler</AlertTitle>
             {error}
           </Alert>
         )}
@@ -77,13 +81,14 @@ function BooksPage() {
         {!loading && !error && (
           <>
             {books.length === 0 ? (
-              <Typography variant="body1" color="text.secondary">
-                Keine Bücher vorhanden.
-              </Typography>
+              <Alert severity="warning" sx={{ mt: 2 }}>
+              <AlertTitle>Hinweis</AlertTitle>
+              Es sind aktuell keine Bücher vorhanden.
+            </Alert>
             ) : (
               <Grid container spacing={2}>
                 {books.map((book) => (
-                  <Grid key={book.id} item xs={12} sm={6} md={4} lg={3}>
+                  <Grid key={book.id} >
                     <BookCard book={book} />
                   </Grid>
                 ))}

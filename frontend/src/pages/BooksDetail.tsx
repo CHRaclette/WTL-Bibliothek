@@ -1,7 +1,11 @@
 import { useParams } from "react-router-dom";
+import AlertTitle from '@mui/material/AlertTitle';
+
 import { useEffect, useState } from "react";
 import { Container, Typography, CircularProgress, Box, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import Alert from '@mui/material/Alert';
+
 
 type Author = { id: number; name: string };
 type Book = {
@@ -19,7 +23,7 @@ function BookDetailsPage() {
   const { id } = useParams();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
-
+   
   useEffect(() => {
     (async () => {
       const res = await fetch(`/api/books/${id}`);
@@ -44,6 +48,12 @@ function BookDetailsPage() {
   if (!book)
     return (
       <Container sx={{ py: 3 }}>
+        
+        <Alert severity="warning">
+        <AlertTitle>Nicht gefunden</AlertTitle>
+        Dieses Buch existiert nicht.
+      </Alert>
+
         <Typography variant="h5">Book not found</Typography>
         <Button variant="contained" sx={{ mt: 2 }} onClick={goHome}>
           Back
@@ -52,7 +62,9 @@ function BookDetailsPage() {
     );
 
   return (
+    
     <Container sx={{ py: 3 }}>
+        
       <Typography variant="h3" fontWeight={700} gutterBottom>
         {book.title}
       </Typography>

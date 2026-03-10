@@ -1,7 +1,6 @@
 const library = require("../services/library");
 const { AppError, catchAsync } = require("../middleware/error");
 
-
 exports.getAuthors = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   let authors = db.authors;
@@ -9,7 +8,7 @@ exports.getAuthors = catchAsync((req, res) => {
   const { name } = req.query;
   if (name) {
     const lower = name.toLowerCase();
-    authors = authors.filter(a => a.name.toLowerCase().includes(lower));
+    authors = authors.filter((a) => a.name.toLowerCase().includes(lower));
   }
 
   res.json(authors);
@@ -20,24 +19,35 @@ exports.getAuthorById = catchAsync((req, res) => {
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    throw new AppError("Invalid id. Must be a number.", 400, "VALIDATION_ERROR");
+    throw new AppError("Invalid id", 400, "VALIDATION_ERROR", {
+      fieldErrors: { id: "Ungültige Autoren-ID." },
+    });
   }
 
-  const author = db.authors.find(a => a.id === id);
+  const author = db.authors.find((a) => a.id === id);
   if (!author) {
-    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", { id });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", {
+      fieldErrors: { id: "Dieser Autor existiert nicht." },
+    });
   }
 
   return res.json(author);
 });
 
-
 exports.createAuthor = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const { name } = req.body ?? {};
 
-  if (!name || typeof name !== "string") {
-    throw new AppError("name is required and must be a string", 400, "VALIDATION_ERROR");
+  const fieldErrors = {};
+
+  if (!name || name.trim() === "") {
+    fieldErrors.name = "Name darf nicht leer sein.";
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", {
+      fieldErrors,
+    });
   }
 
   const nextId = (db.authors.at(-1)?.id ?? 0) + 1;
@@ -49,27 +59,37 @@ exports.createAuthor = catchAsync((req, res) => {
   return res.status(201).json(newAuthor);
 });
 
-
 exports.deleteAuthor = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    throw new AppError("Invalid id. Must be a number.", 400, "VALIDATION_ERROR");
+    throw new AppError("Invalid id", 400, "VALIDATION_ERROR", {
+      fieldErrors: { id: "Ungültige Autoren-ID." },
+    });
   }
 
-  const index = db.authors.findIndex(a => a.id === id);
+  const index = db.authors.findIndex((a) => a.id === id);
   if (index === -1) {
-    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", { id });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", {
+      fieldErrors: { id: "Dieser Autor existiert nicht." },
+    });
   }
 
-  const referencedBy = db.books.filter(b => b.authorIds.includes(id)).map(b => b.id);
+  const referencedBy = db.books
+    .filter((b) => b.authorIds.includes(id))
+    .map((b) => b.id);
+
   if (referencedBy.length > 0) {
     throw new AppError(
       "Author is referenced by existing books",
       409,
       "AUTHOR_REFERENCED",
-      { bookIds: referencedBy }
+      {
+        fieldErrors: {
+          id: `Autor kann nicht gelöscht werden, da er von Büchern referenziert wird: ${referencedBy.join(", ")}`,
+        },
+      }
     );
   }
 
@@ -79,24 +99,34 @@ exports.deleteAuthor = catchAsync((req, res) => {
   return res.json({ message: "Author deleted", author: deleted });
 });
 
-
 exports.patchAuthor = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    throw new AppError("Invalid id. Must be a number.", 400, "VALIDATION_ERROR");
+    throw new AppError("Invalid id", 400, "VALIDATION_ERROR", {
+      fieldErrors: { id: "Ungültige Autoren-ID." },
+    });
   }
 
-  const author = db.authors.find(a => a.id === id);
+  const author = db.authors.find((a) => a.id === id);
   if (!author) {
-    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", { id });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", {
+      fieldErrors: { id: "Dieser Autor existiert nicht." },
+    });
   }
 
   const { name } = req.body ?? {};
+  const fieldErrors = {};
 
-  if (name !== undefined && typeof name !== "string") {
-    throw new AppError("name must be a string", 400, "VALIDATION_ERROR");
+  if (name !== undefined && name.trim() === "") {
+    fieldErrors.name = "Name darf nicht leer sein.";
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", {
+      fieldErrors,
+    });
   }
 
   if (name !== undefined) author.name = name;
