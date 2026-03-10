@@ -8,7 +8,6 @@ exports.getBooks = catchAsync((req, res) => {
 
   const { title, authorName } = req.query;
 
-
   if (title) {
     const lower = title.toLowerCase();
     books = books.filter(b => b.title.toLowerCase().includes(lower));
@@ -25,20 +24,29 @@ exports.getBooks = catchAsync((req, res) => {
     );
   }
 
-  const result = books.map(book => ({
-    ...book,
-    authors: db.authors.filter(a => book.authorIds.includes(a.id))
-  }));
+  
+const result = books.map(book => {
+  const authors = db.authors.filter(a => book.authorIds.includes(a.id));
+  return {
+    id: book.id,
+    title: book.title,
+    year: book.year,
+    isbn: book.isbn,
+    authorIds: book.authorIds,
+    authors
+  };
+});
+
 
   res.json(result);
 });
 
-exports.getBookById = catchAsync((req, res) => {
+exports.getBookById = catchAsync((req, res, next) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    return next(new SimpleError("Invalid ID", 400, "VALIDATION_ERROR"));
+    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR", { id: req.params.id });
   }
 
   const book = db.books.find(b => b.id === id);
@@ -47,18 +55,15 @@ exports.getBookById = catchAsync((req, res) => {
   }
 
   const authors = db.authors.filter(a => book.authorIds.includes(a.id));
-
   return res.json({ ...book, authors });
 });
-
 
 exports.createBook = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const { title, year, isbn, authorIds } = req.body;
 
-
   if (!title || !year || !isbn || !Array.isArray(authorIds)) {
-    throw new SimpleError(
+    throw new AppError(
       "title, year, isbn and authorIds[] are required",
       400,
       "VALIDATION_ERROR",
@@ -66,10 +71,14 @@ exports.createBook = catchAsync((req, res) => {
     );
   }
 
-
   const invalid = authorIds.filter(id => !db.authors.find(a => a.id === id));
   if (invalid.length > 0) {
-    throw new AppError("Some authorIds do not exist", 400, "INVALID_AUTHOR_IDS", { invalid });
+    throw new AppError(
+      "Some authorIds do not exist",
+      400,
+      "INVALID_AUTHOR_IDS",
+      { invalid }
+    );
   }
 
   const nextId = (db.books.at(-1)?.id ?? 0) + 1;
@@ -88,17 +97,18 @@ exports.createBook = catchAsync((req, res) => {
   res.status(201).json(newBook);
 });
 
+
 exports.deleteBook = catchAsync((req, res) => {
   const db = req.app.locals.seed;
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR");
+    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR", { id: req.params.id });
   }
 
   const index = db.books.findIndex(b => b.id === id);
   if (index === -1) {
-    throw new AppError("Book not found", 404, "BOOK_NOT_FOUND");
+    throw new AppError("Book not found", 404, "BOOK_NOT_FOUND", { id });
   }
 
   const deleted = db.books.splice(index, 1)[0];
@@ -116,7 +126,7 @@ exports.patchBook = catchAsync((req, res) => {
   const id = Number(req.params.id);
 
   if (Number.isNaN(id)) {
-    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR");
+    throw new AppError("Invalid ID", 400, "VALIDATION_ERROR", { id: req.params.id });
   }
 
   const book = db.books.find(b => b.id === id);
