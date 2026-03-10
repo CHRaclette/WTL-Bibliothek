@@ -14,9 +14,14 @@ Die Daten werden lokal in einer `library.json` gespeichert und über ein kleines
 npm install
 npm run dev
 ```
+## 🚀 Frontend starten
 
-Der Backend‑Server läuft anschließend auf **Port 3000**.
-
+```bash
+npm install
+npm run dev
+```
+Der Backend‑Server läuft anschliessend auf **Port 3000**.
+Der Frontend-Server läuft anschliessena auf **Port 5173**.
 ---
 
 ## 📁 Projektstruktur

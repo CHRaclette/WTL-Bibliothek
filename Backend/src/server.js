@@ -6,6 +6,11 @@ const cors = require('cors');
 app.use(cors({ origin: true, credentials: true })); 
 
 
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+}));
+
 
 // Health check
 app.get('/health', (req, res) => {
