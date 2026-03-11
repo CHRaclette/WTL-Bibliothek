@@ -153,15 +153,6 @@
       ]
     },
     {
-      "id": 14,
-      "title": "American Gods",
-      "year": 2001,
-      "isbn": "978-1-1313-1414-2",
-      "authorIds": [
-        7
-      ]
-    },
-    {
       "id": 15,
       "title": "Mistborn: The Final Empire",
       "year": 2006,
@@ -302,6 +293,16 @@
       "year": 1996,
       "isbn": "978-1-8989-7744-1",
       "authorIds": [
+        7
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Good Omens 2",
+      "year": 2001,
+      "isbn": "978-1-2222-3334-9",
+      "authorIds": [
+        2,
         7
       ]
     }

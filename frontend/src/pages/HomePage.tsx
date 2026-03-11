@@ -26,7 +26,6 @@ export function HomePage() {
     book.title.toLowerCase().includes(query.toLowerCase())
   );
 
-
   useEffect(() => {
     (async () => {
       try {
