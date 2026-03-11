@@ -44,6 +44,10 @@ exports.createAuthor = catchAsync((req, res) => {
     fieldErrors.name = "Name darf nicht leer sein.";
   }
 
+  if (name >= 50) {
+    fieldErrors.name = "Name ist zu lang";
+  }
+
   if (Object.keys(fieldErrors).length > 0) {
     throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", {
       fieldErrors,

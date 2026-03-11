@@ -1,5 +1,7 @@
 const express = require('express');
 const app = express();
+// Rate Limit
+app.use(express.json({ limit: "100kb" }));
 const app = require('./app');
 app.use(express.json());
 const cors = require('cors');
@@ -10,6 +12,7 @@ app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
 }));
+
 
 
 // Health check

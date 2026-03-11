@@ -18,6 +18,7 @@ import {
   DialogActions,
   TextField,
   Autocomplete,
+  Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -54,6 +55,9 @@ export default function AdminBooksPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
+
+  const [filterTitle, setFilterTitle] = useState("");
+  const [filterAuthor, setFilterAuthor] = useState<Author | null>(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -127,7 +131,23 @@ export default function AdminBooksPage() {
     if (p5) f += `-${p5}`;
     return f;
   }
+const filteredBooks = books.filter(b => {
+ 
+  if (filterTitle.trim() !== "") {
+    if (!b.title.toLowerCase().includes(filterTitle.toLowerCase())) {
+      return false;
+    }
+  }
 
+
+  if (filterAuthor) {
+    if (!b.authorIds.includes(filterAuthor.id)) {
+      return false;
+    }
+  }
+
+  return true;
+});
   const saveBook = async () => {
     setFieldErrors({});
 
@@ -140,6 +160,12 @@ export default function AdminBooksPage() {
       setFieldErrors({ isbn: "ISBN muss 13 Ziffern enthalten." });
       return;
     }
+    
+    if (title.length >= 100) {
+       setFieldErrors( {title: "Titel ist zu lang"});
+       return;
+    } 
+
 
     if (selectedAuthorList.length === 0) {
       setFieldErrors({ authorIds: "Bitte mindestens einen Autor auswählen." });
@@ -237,7 +263,31 @@ export default function AdminBooksPage() {
       </Snackbar>
 
       <Typography variant="h5">Bücher verwalten</Typography>
+      <Paper sx={{ p: 2, my: 2 }}>
+  <Stack
+    direction={{ xs: "column", sm: "row" }}
+    spacing={2}
+    alignItems="center"
+  >
+    <TextField
+      label="Nach Titel filtern"
+      value={filterTitle}
+      onChange={(e) => setFilterTitle(e.target.value)}
+      fullWidth
+    />
 
+    <Autocomplete
+      options={authors}
+      getOptionLabel={(a) => a.name}
+      value={filterAuthor}
+      onChange={(_, v) => setFilterAuthor(v)}
+      renderInput={(params) => (
+        <TextField {...params} label="Autor auswählen" />
+      )}
+      sx={{ width: 250 }}
+    />
+  </Stack>
+</Paper>
       <Button variant="contained" sx={{ my: 2 }} onClick={openCreateModal}>
         Neues Buch erstellen
       </Button>
@@ -255,7 +305,7 @@ export default function AdminBooksPage() {
           </TableHead>
 
           <TableBody>
-            {books.map((b) => (
+            {filteredBooks.map((b) => (
               <TableRow key={b.id}>
                 <TableCell>{b.title}</TableCell>
                 <TableCell>{b.isbn}</TableCell>

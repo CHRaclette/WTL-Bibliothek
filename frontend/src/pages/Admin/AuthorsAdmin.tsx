@@ -17,6 +17,7 @@ import {
   DialogContent,
   TextField,
   DialogActions,
+  Stack,
 } from "@mui/material";
 
 type Author = { id: number; name: string };
@@ -36,6 +37,7 @@ export default function AdminAuthorsPage() {
   const [authorToDelete, setAuthorToDelete] = useState<Author | null>(null);
   const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
   const closeDeleteError = () => setDeleteErrorMsg(null);
+  const [filterAuthorname, setFilterAuthorname] = useState("");
 
   const loadData = async () => {
     setLoading(true);
@@ -69,7 +71,9 @@ export default function AdminAuthorsPage() {
     setFieldErrors({});
     setOpen(true);
   };
-
+  const filteredAuthors = authors.filter((a) =>
+    a.name.toLowerCase().includes(filterAuthorname.toLowerCase())
+  );
   const saveAuthor = async () => {
     setFieldErrors({});
 
@@ -77,6 +81,10 @@ export default function AdminAuthorsPage() {
       setFieldErrors({ name: "Name darf nicht leer sein." });
       return;
     }
+    if (authorName.length >= 50) {
+      setFieldErrors( {name: "Name ist zu lang"});
+      return;
+   } 
 
     try {
       const url = editMode
@@ -173,7 +181,13 @@ export default function AdminAuthorsPage() {
       </Snackbar>
 
       <Typography variant="h5">Autoren verwalten</Typography>
-
+      <TextField
+  label="Nach Autor filtern"
+  value={filterAuthorname}
+  onChange={(e) => setFilterAuthorname(e.target.value)}
+  sx={{ my: 2 }}
+  fullWidth
+/>
       <Button variant="contained" sx={{ my: 2 }} onClick={openCreate}>
         Neuen Autor erstellen
       </Button>
@@ -189,7 +203,7 @@ export default function AdminAuthorsPage() {
           </TableHead>
 
           <TableBody>
-            {authors.map((a) => (
+            {filteredAuthors.map((a) => (
               <TableRow key={a.id}>
                 <TableCell>{a.name}</TableCell>
                 <TableCell>{a.id}</TableCell>

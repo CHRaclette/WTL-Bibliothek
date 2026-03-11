@@ -88,11 +88,11 @@ function BooksPage() {
     <>
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 3 }}>
-          Bücher
+          Bücher Übersicht
         </Typography>
 
   
-        <Paper sx={{ p: 2, mb: 3 }}>
+        <Paper sx={{ p: 2, mb: 3}}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               fullWidth

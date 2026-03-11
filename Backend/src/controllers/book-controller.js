@@ -164,6 +164,9 @@ exports.patchBook = catchAsync((req, res) => {
   if (title !== undefined && title.trim() === "") {
     fieldErrors.title = "Titel darf nicht leer sein.";
   }
+  if (title.length >= 100) {
+    fieldErrors.title = "Titel ist zu lang";
+  }
 
   if (year !== undefined) {
     if (Number.isNaN(Number(year))) {

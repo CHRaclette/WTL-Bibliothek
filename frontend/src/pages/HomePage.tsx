@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Container, Typography, CircularProgress, Box } from "@mui/material";
+import {
+  Container,
+  Typography,
+  CircularProgress,
+  Box,
+  TextField,
+  Alert,
+  AlertTitle
+} from "@mui/material";
 
-import { Alert, AlertTitle } from "@mui/material";
 type Book = {
   id: number;
   title: string;
@@ -14,11 +21,12 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
-  
-    const filteredBooks = books.filter((book) =>
+
+  const filteredBooks = books.filter((book) =>
     book.title.toLowerCase().includes(query.toLowerCase())
   );
-  
+
+
   useEffect(() => {
     (async () => {
       try {
@@ -41,6 +49,7 @@ export function HomePage() {
     })();
   }, []);
 
+
   if (loading)
     return (
       <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
@@ -48,35 +57,43 @@ export function HomePage() {
       </Box>
     );
 
-
-    if (error)
-        return (
-          <Container sx={{ py: 3 }}>
-            <Alert severity="error">
-            <AlertTitle>Fehler</AlertTitle>
-            {error}
-            </Alert>
-            
-          </Container>
-        );
-      
+ 
+  if (error)
+    return (
+      <Container sx={{ py: 3 }}>
+        <Alert severity="error">
+          <AlertTitle>Fehler</AlertTitle>
+          {error}
+        </Alert>
+      </Container>
+    );
 
   return (
-    <Container sx={{ py: 3, justifyContent: "center", alignItems: "center" }}>
+    <Container sx={{ py: 3 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        Bücher Übersicht
+        Titel Übersicht
       </Typography>
-      
+
+
+      <TextField
+        fullWidth
+        label="Nach Titel suchen"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        sx={{ mb: 3 }}
+      />
+
+
       {books.length === 0 && (
-  <>
-    <Alert severity="warning" sx={{ mt: 2 }}>
-      <AlertTitle>Hinweis</AlertTitle>
-      Es sind aktuell keine Bücher vorhanden.
-    </Alert>
-  </>
-)}
-      {books.length > 0 &&
-        books.map((book) => (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          <AlertTitle>Hinweis</AlertTitle>
+          Es sind aktuell keine Bücher vorhanden.
+        </Alert>
+      )}
+
+  
+      {filteredBooks.length > 0 &&
+        filteredBooks.map((book) => (
           <Typography
             key={book.id}
             component={Link}
@@ -88,19 +105,26 @@ export function HomePage() {
               width: "fit-content",
               textDecoration: "none",
               color: "black",
-              "&:hover": { 
+              "&:hover": {
                 color: "red",
                 transform: "scale(1.03)",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
-               },
+                boxShadow: "0 6px 20px rgba(0,0,0,0.15)"
+              }
             }}
           >
             {book.title}
             <Typography variant="body2" color="text.secondary">
-                  Weitere Details ansehen →
+              Weitere Details ansehen →
             </Typography>
           </Typography>
         ))}
+
+      {filteredBooks.length === 0 && books.length > 0 && (
+        <Alert severity="info">
+          <AlertTitle>Keine Treffer</AlertTitle>
+          Kein Buch passt zu deiner Suche.
+        </Alert>
+      )}
     </Container>
   );
 }
