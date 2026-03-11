@@ -25,14 +25,17 @@ export default function AdminAuthorsPage() {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<Author | null>(null);
   const [authorName, setAuthorName] = useState("");
-
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const closeSnackbar = () => setSuccessMsg(null);
+  const closeSuccess = () => setSuccessMsg(null);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [authorToDelete, setAuthorToDelete] = useState<Author | null>(null);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
+  const closeDeleteError = () => setDeleteErrorMsg(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -49,12 +52,13 @@ export default function AdminAuthorsPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [open]);
 
   const openCreate = () => {
     setEditMode(false);
     setSelectedAuthor(null);
     setAuthorName("");
+    setFieldErrors({});
     setOpen(true);
   };
 
@@ -62,10 +66,18 @@ export default function AdminAuthorsPage() {
     setEditMode(true);
     setSelectedAuthor(a);
     setAuthorName(a.name);
+    setFieldErrors({});
     setOpen(true);
   };
 
   const saveAuthor = async () => {
+    setFieldErrors({});
+
+    if (authorName.trim() === "") {
+      setFieldErrors({ name: "Name darf nicht leer sein." });
+      return;
+    }
+
     try {
       const url = editMode
         ? `/api/authors/${selectedAuthor!.id}`
@@ -78,7 +90,16 @@ export default function AdminAuthorsPage() {
         body: JSON.stringify({ name: authorName }),
       });
 
-      if (!res.ok) throw new Error("Fehler beim Speichern");
+      const json = await res.json();
+
+      if (!res.ok) {
+        if (json?.error?.details?.fieldErrors) {
+          setFieldErrors(json.error.details.fieldErrors);
+        } else {
+          setError(json.error?.message || "Fehler beim Speichern");
+        }
+        return;
+      }
 
       setOpen(false);
       setSuccessMsg(editMode ? "Autor aktualisiert!" : "Autor erstellt!");
@@ -91,7 +112,29 @@ export default function AdminAuthorsPage() {
   const deleteAuthor = async (id: number) => {
     try {
       const res = await fetch(`/api/authors/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Fehler beim Löschen");
+      let json: any = null;
+
+   
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          setDeleteErrorMsg( "Der Autor kann nicht gelöscht werden (Konflikt).");
+          return;
+        }
+
+        if (json?.error?.details?.fieldErrors) {
+          setFieldErrors(json.error.details.fieldErrors);
+        } else {
+          setError(json?.error?.message || "Fehler beim Löschen");
+        }
+        return;
+      }
+
       setSuccessMsg("Autor gelöscht!");
       loadData();
     } catch (e: any) {
@@ -110,10 +153,22 @@ export default function AdminAuthorsPage() {
 
   return (
     <>
-      <Snackbar open={!!successMsg} autoHideDuration={3000} onClose={closeSnackbar}>
-        <Alert severity="success" variant="filled">
+      <Snackbar open={!!successMsg} autoHideDuration={3000} onClose={closeSuccess}>
+        <Alert severity="success" variant="filled" onClose={closeSuccess}>
           <AlertTitle>Erfolg</AlertTitle>
           {successMsg}
+        </Alert>
+      </Snackbar>
+
+  
+      <Snackbar
+        open={!!deleteErrorMsg}
+        autoHideDuration={4000}
+        onClose={closeDeleteError}
+      >
+        <Alert severity="error" variant="filled" onClose={closeDeleteError}>
+          <AlertTitle>Aktion nicht möglich</AlertTitle>
+          {deleteErrorMsg}
         </Alert>
       </Snackbar>
 
@@ -142,7 +197,13 @@ export default function AdminAuthorsPage() {
                   <Button onClick={() => openEdit(a)} sx={{ mr: 1 }}>
                     Bearbeiten
                   </Button>
-                  <Button color="error" onClick={() => deleteAuthor(a.id)}>
+                  <Button
+                    color="error"
+                    onClick={() => {
+                      setAuthorToDelete(a);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
                     Löschen
                   </Button>
                 </TableCell>
@@ -160,7 +221,7 @@ export default function AdminAuthorsPage() {
         </Table>
       </TableContainer>
 
-      {/* Modal */}
+      {/* Create/Edit Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{editMode ? "Autor bearbeiten" : "Neuen Autor erstellen"}</DialogTitle>
 
@@ -170,6 +231,8 @@ export default function AdminAuthorsPage() {
             label="Name"
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
+            error={!!fieldErrors.name}
+            helperText={fieldErrors.name}
             sx={{ mt: 2 }}
           />
         </DialogContent>
@@ -178,6 +241,29 @@ export default function AdminAuthorsPage() {
           <Button onClick={() => setOpen(false)}>Abbrechen</Button>
           <Button variant="contained" onClick={saveAuthor}>
             {editMode ? "Speichern" : "Erstellen"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Autor löschen?</DialogTitle>
+        <DialogContent>
+          Möchtest du den Autor <strong>{authorToDelete?.name}</strong> wirklich löschen?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Abbrechen</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              if (!authorToDelete) return;
+              await deleteAuthor(authorToDelete.id);
+              setDeleteDialogOpen(false);
+              setAuthorToDelete(null);
+            }}
+          >
+            Löschen
           </Button>
         </DialogActions>
       </Dialog>

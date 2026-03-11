@@ -62,14 +62,13 @@ export function HomePage() {
       
 
   return (
-    <Container sx={{ py: 3 }}>
+    <Container sx={{ py: 3, justifyContent: "center", alignItems: "center" }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
         Bücher Übersicht
       </Typography>
       
       {books.length === 0 && (
   <>
-
     <Alert severity="warning" sx={{ mt: 2 }}>
       <AlertTitle>Hinweis</AlertTitle>
       Es sind aktuell keine Bücher vorhanden.
@@ -88,11 +87,18 @@ export function HomePage() {
               display: "block",
               width: "fit-content",
               textDecoration: "none",
-              color: "primary.main",
-              "&:hover": { textDecoration: "underline" },
+              color: "black",
+              "&:hover": { 
+                color: "red",
+                transform: "scale(1.03)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+               },
             }}
           >
             {book.title}
+            <Typography variant="body2" color="text.secondary">
+                  Weitere Details ansehen →
+            </Typography>
           </Typography>
         ))}
     </Container>

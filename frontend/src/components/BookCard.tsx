@@ -1,10 +1,16 @@
-import * as React from 'react';
-import { Card, CardContent, CardHeader, Chip, Stack, Typography } from '@mui/material';
+import * as React from "react";
+import {
+  Card,
+  CardActionArea,
+  CardContent,
+  CardHeader,
+  Chip,
+  Divider,
+  Stack,
+  Typography,
+} from "@mui/material";
 
-type Author = {
-  id: number;
-  name: string;
-};
+type Author = { id: number; name: string };
 
 type Book = {
   id: number;
@@ -19,42 +25,66 @@ type Props = {
 };
 
 export function BookCard({ book }: Props) {
-  return (
-    <Card elevation={3} sx={{ height: '100%' }}>
-      <CardHeader
-        title={
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            {book.title}
-          </Typography>
-        }
-        subheader={`ISBN: ${book.isbn}`}
-      />
-      <CardContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Erscheinungsjahr: <strong>{book.year}</strong>
-        </Typography>
+  const authors = book.authors ?? [];
 
-        {book.authors && book.authors.length > 0 ? (
-          <>
-            <Typography variant="body2" sx={{ mb: 0.5 }}>
-              Autoren:
+  return (
+    <Card
+      elevation={2}
+      sx={{
+        height: "100%",
+        borderRadius: 2,
+        width: 500,
+        transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        "&:hover": { transform: "translateY(-2px)" },
+      }}
+    >
+      <CardActionArea  sx={{ height: "100%" }}>
+        <CardHeader
+          title={
+            <Typography variant="h6" fontWeight={700}>
+              {book.title}
             </Typography>
-            <Stack 
-            sx={{ textAlign: "center" ,
-                justifyContent: "center"
-            }}
-            direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {book.authors.map((authors) => (
-                <Chip key={authors.id} label={authors.name} size="small" />
+          }
+          subheader={
+            <Typography variant="body2" color="text.secondary">
+              ISBN: {book.isbn}
+            </Typography>
+          }
+          sx={{ pb: 0 }}
+        />
+
+        <CardContent sx={{ pt: 1.5 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            spacing={1}
+            sx={{ mb: 1.5 }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Erscheinungsjahr: <strong>{book.year}</strong>
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary">
+              {authors.length}
+            </Typography>
+          </Stack>
+
+          <Divider sx={{ mb: 1.5 }} />
+          {authors.length > 0 ? (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {authors.map((a) => (
+                <Chip key={a.id} label={a.name} size="small" />
               ))}
             </Stack>
-          </>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            Keine Autorendaten vorhanden.
-          </Typography>
-        )}
-      </CardContent>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Keine Autorendaten vorhanden.
+            </Typography>
+          )}
+        </CardContent>
+      </CardActionArea>
     </Card>
   );
 }

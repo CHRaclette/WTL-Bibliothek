@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AlertTitle from '@mui/material/AlertTitle';
 import Snackbar from '@mui/material/Snackbar';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Container,
   Typography,
-       }
- from '@mui/material';
+  TextField,
+  Paper,
+  Stack,
+  Autocomplete,
+} from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { BookCard } from '../components/BookCard';
 type Author = {
@@ -27,25 +31,30 @@ type Book = {
 
 function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [filterTitle, setFilterTitle] = useState('');
+  const [filterAuthor, setFilterAuthor] = useState<Author | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        const res = await fetch('/api/books'); 
-        if (!res.ok) {
-          let msg = `HTTP ${res.status}`;
-          try {
-            const problem = await res.json();
-            msg = problem?.error?.message || msg;
-          } catch {}
-          throw new Error(msg);
+        const bRes = await fetch('/api/books');
+        const aRes = await fetch('/api/authors');
+
+        if (!bRes.ok || !aRes.ok) throw new Error('Backend Error');
+
+        const booksData = await bRes.json();
+        const authorsData = await aRes.json();
+
+        if (!cancelled) {
+          setBooks(booksData);
+          setAuthors(authorsData);
         }
-        const data: Book[] = await res.json();
-        if (!cancelled) setBooks(data);
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? 'Unknown error');
       } finally {
@@ -58,12 +67,52 @@ function BooksPage() {
     };
   }, []);
 
+  const filteredBooks = useMemo(() => {
+    const titleNeedle = filterTitle.toLowerCase().trim();
+
+    return books.filter((b) => {
+  
+      if (titleNeedle && !b.title.toLowerCase().includes(titleNeedle)) {
+        return false;
+      }
+
+      if (filterAuthor && !b.authorIds.includes(filterAuthor.id)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [books, filterTitle, filterAuthor]);
+
   return (
     <>
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 3 }}>
           Bücher
         </Typography>
+
+  
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              fullWidth
+              label="Titel suchen"
+              value={filterTitle}
+              onChange={(e) => setFilterTitle(e.target.value)}
+            />
+
+            <Autocomplete
+              options={authors}
+              value={filterAuthor}
+              onChange={(_, author) => setFilterAuthor(author)}
+              getOptionLabel={(a) => a.name}
+              renderInput={(params) => (
+                <TextField {...params} label="Autor wählen" />
+              )}
+              fullWidth
+            />
+          </Stack>
+        </Paper>
 
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -80,15 +129,15 @@ function BooksPage() {
 
         {!loading && !error && (
           <>
-            {books.length === 0 ? (
+            {filteredBooks.length === 0 ? (
               <Alert severity="warning" sx={{ mt: 2 }}>
-              <AlertTitle>Hinweis</AlertTitle>
-              Es sind aktuell keine Bücher vorhanden.
-            </Alert>
+                <AlertTitle>Hinweis</AlertTitle>
+                Keine Bücher gefunden.
+              </Alert>
             ) : (
               <Grid container spacing={2}>
-                {books.map((book) => (
-                  <Grid key={book.id} >
+                {filteredBooks.map((book) => (
+                  <Grid key={book.id}>
                     <BookCard book={book} />
                   </Grid>
                 ))}

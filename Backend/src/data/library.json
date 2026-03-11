@@ -31,6 +31,22 @@
     {
       "id": 8,
       "name": "Brandon Sanderson"
+    },
+    {
+      "id": 9,
+      "name": "Gandalf"
+    },
+    {
+      "id": 10,
+      "name": "67"
+    },
+    {
+      "id": 11,
+      "name": "34"
+    },
+    {
+      "id": 12,
+      "name": "12"
     }
   ],
   "books": [
@@ -69,15 +85,6 @@
       "authorIds": [
         7,
         2
-      ]
-    },
-    {
-      "id": 5,
-      "title": "The Silmarillion",
-      "year": 1977,
-      "isbn": "978-1-3456-7890-1",
-      "authorIds": [
-        1
       ]
     },
     {
@@ -198,15 +205,6 @@
       ]
     },
     {
-      "id": 19,
-      "title": "Harry Potter and the Goblet of Fire",
-      "year": 2000,
-      "isbn": "978-1-6611-8811-0",
-      "authorIds": [
-        3
-      ]
-    },
-    {
       "id": 20,
       "title": "The Stand",
       "year": 1978,
@@ -303,6 +301,38 @@
       "isbn": "978-1-8989-7744-1",
       "authorIds": [
         7
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Harry Potter and the Philosopher's Stone",
+      "year": 1997,
+      "isbn": "978-1-8765-4321-7",
+      "authorIds": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": 32,
+      "title": "Harry Potter and the Philosopher's Stone",
+      "year": 1997,
+      "isbn": "978-1-8765-4321-7",
+      "authorIds": [
+        9,
+        8,
+        7,
+        6
+      ]
+    },
+    {
+      "id": 33,
+      "title": "67",
+      "year": 1676,
+      "isbn": "676-7-6767-6767-6",
+      "authorIds": [
+        9
       ]
     }
   ]

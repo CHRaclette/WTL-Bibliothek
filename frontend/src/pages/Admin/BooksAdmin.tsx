@@ -35,11 +35,11 @@ export default function AdminBooksPage() {
 
   const [books, setBooks] = useState<Book[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [openError, setOpenError] = useState(false);
+
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
@@ -51,6 +51,9 @@ export default function AdminBooksPage() {
   const [year, setYear] = useState<string>("");
   const [isbn, setIsbn] = useState<string>("");
   const [selectedAuthorList, setSelectedAuthorList] = useState<Author[]>([]);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -65,7 +68,6 @@ export default function AdminBooksPage() {
       setSuccessMsg("Bücher erfolgreich geladen");
     } catch (e: any) {
       setError(e.message);
-      setOpenError(true);
     } finally {
       setLoading(false);
     }
@@ -75,8 +77,20 @@ export default function AdminBooksPage() {
     loadData();
   }, []);
 
+  const reloadAuthors = async () => {
+    try {
+      const res = await fetch("/api/authors");
+      if (!res.ok) throw new Error("Fehler beim Laden der Autoren");
+      setAuthors(await res.json());
+    } catch (e: any) {
+      console.error(e?.message ?? e);
+    }
+  };
+  
   const openCreateModal = () => {
+    reloadAuthors(); 
     setEditMode(false);
+     
     setSelectedBook(null);
     setFieldErrors({});
     setTitle("");
@@ -87,6 +101,7 @@ export default function AdminBooksPage() {
   };
 
   const openEditModal = (book: Book) => {
+    reloadAuthors();  
     setEditMode(true);
     setSelectedBook(book);
     setFieldErrors({});
@@ -105,37 +120,31 @@ export default function AdminBooksPage() {
     const p4 = digits.substring(8, 12);
     const p5 = digits.substring(12, 13);
 
-    let formatted = p1;
-    if (p2) formatted += `-${p2}`;
-    if (p3) formatted += `-${p3}`;
-    if (p4) formatted += `-${p4}`;
-    if (p5) formatted += `-${p5}`;
-
-    return formatted;
+    let f = p1;
+    if (p2) f += `-${p2}`;
+    if (p3) f += `-${p3}`;
+    if (p4) f += `-${p4}`;
+    if (p5) f += `-${p5}`;
+    return f;
   }
 
   const saveBook = async () => {
     setFieldErrors({});
 
     if (year.length !== 4 || Number(year) > currentYear) {
-      setError(`Jahr muss 4-stellig und ≤ ${currentYear} sein.`);
-      setOpenError(true);
+      setFieldErrors({ year: `Jahr muss 4-stellig und ≤ ${currentYear} sein.` });
       return;
     }
 
     if (isbn.replace(/\D/g, "").length !== 13) {
-      setError(`ISBN muss 13 Ziffern enthalten.`);
-      setOpenError(true);
+      setFieldErrors({ isbn: "ISBN muss 13 Ziffern enthalten." });
       return;
     }
 
-    
-  
-if (selectedAuthorList.length === 0) {
-    setFieldErrors({ authorIds: "Bitte mindestens einen Autor auswählen." });
-    return;
-  }
-  
+    if (selectedAuthorList.length === 0) {
+      setFieldErrors({ authorIds: "Bitte mindestens einen Autor auswählen." });
+      return;
+    }
 
     const body = {
       title,
@@ -161,7 +170,6 @@ if (selectedAuthorList.length === 0) {
           setFieldErrors(json.error.details.fieldErrors);
         } else {
           setError(json.error?.message || "Fehler beim Speichern");
-          setOpenError(true);
         }
         return;
       }
@@ -171,19 +179,33 @@ if (selectedAuthorList.length === 0) {
       loadData();
     } catch (e: any) {
       setError(e.message);
-      setOpenError(true);
     }
   };
 
   const deleteBook = async (id: number) => {
     try {
       const res = await fetch(`/api/books/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Fehler beim Löschen");
+
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch {}
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          const msg = json?.error?.message || "Buch kann nicht gelöscht werden.";
+          setDeleteErrorMsg(msg);
+          return;
+        }
+
+        setError(json?.error?.message || "Fehler beim Löschen");
+        return;
+      }
+
       setSuccessMsg("Buch gelöscht!");
       loadData();
     } catch (e: any) {
       setError(e.message);
-      setOpenError(true);
     }
   };
 
@@ -204,25 +226,13 @@ if (selectedAuthorList.length === 0) {
       </Snackbar>
 
       <Snackbar
-        open={openError}
-        autoHideDuration={2000}
-        onClose={(_, reason) => {
-          if (reason === "clickaway") return;
-          setOpenError(false);
-          navigate("/admin");
-        }}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        open={!!deleteErrorMsg}
+        autoHideDuration={3000}
+        onClose={() => setDeleteErrorMsg(null)}
       >
-        <Alert
-          severity="error"
-          variant="filled"
-          onClose={() => {
-            setOpenError(false);
-            navigate("/admin");
-          }}
-        >
-          <AlertTitle>Fehler</AlertTitle>
-          {error ?? "Unbekannter Fehler"}
+        <Alert severity="error" variant="filled" onClose={() => setDeleteErrorMsg(null)}>
+          <AlertTitle>Aktion nicht möglich</AlertTitle>
+          {deleteErrorMsg}
         </Alert>
       </Snackbar>
 
@@ -243,6 +253,7 @@ if (selectedAuthorList.length === 0) {
               <TableCell>Aktionen</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {books.map((b) => (
               <TableRow key={b.id}>
@@ -255,11 +266,19 @@ if (selectedAuthorList.length === 0) {
                     .filter(Boolean)
                     .join(", ")}
                 </TableCell>
+
                 <TableCell>
                   <Button sx={{ mr: 1 }} onClick={() => openEditModal(b)}>
                     Bearbeiten
                   </Button>
-                  <Button color="error" onClick={() => deleteBook(b.id)}>
+
+                  <Button
+                    color="error"
+                    onClick={() => {
+                      setBookToDelete(b);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
                     Löschen
                   </Button>
                 </TableCell>
@@ -279,6 +298,7 @@ if (selectedAuthorList.length === 0) {
 
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{editMode ? "Buch bearbeiten" : "Neues Buch erstellen"}</DialogTitle>
+
         <DialogContent>
           <TextField
             fullWidth
@@ -310,8 +330,7 @@ if (selectedAuthorList.length === 0) {
             value={isbn}
             onChange={(e) => {
               const raw = e.target.value.replace(/\D/g, "");
-              const formatted = formatISBN(raw);
-              setIsbn(formatted);
+              setIsbn(formatISBN(raw));
             }}
             inputProps={{ maxLength: 17 }}
             error={!!fieldErrors.isbn}
@@ -341,6 +360,29 @@ if (selectedAuthorList.length === 0) {
           <Button onClick={() => setOpen(false)}>Abbrechen</Button>
           <Button variant="contained" onClick={saveBook}>
             {editMode ? "Speichern" : "Erstellen"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Buch löschen?</DialogTitle>
+        <DialogContent>
+          Möchtest du das Buch <strong>{bookToDelete?.title}</strong> wirklich löschen?
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Abbrechen</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              if (!bookToDelete) return;
+              await deleteBook(bookToDelete.id);
+              setDeleteDialogOpen(false);
+              setBookToDelete(null);
+            }}
+          >
+            Löschen
           </Button>
         </DialogActions>
       </Dialog>

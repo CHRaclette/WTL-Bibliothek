@@ -2,9 +2,11 @@ import { useParams } from "react-router-dom";
 import AlertTitle from '@mui/material/AlertTitle';
 
 import { useEffect, useState } from "react";
-import { Container, Typography, CircularProgress, Box, Button } from "@mui/material";
+import { Container, Typography, CircularProgress, Box, Button, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Alert from '@mui/material/Alert';
+import { BookCard } from "../components/BookCard";
+import { WidthFull } from "@mui/icons-material";
 
 
 type Author = { id: number; name: string };
@@ -15,6 +17,7 @@ type Book = {
   isbn: string;
   authors?: Author[];
 };
+
 
 function BookDetailsPage() {
   const navigate = useNavigate();
@@ -49,36 +52,27 @@ function BookDetailsPage() {
     return (
       <Container sx={{ py: 3 }}>
         
+       
+
+        <Typography variant="h5">Buch nicht gefunden</Typography>
+        
         <Alert severity="warning">
         <AlertTitle>Nicht gefunden</AlertTitle>
         Dieses Buch existiert nicht.
       </Alert>
-
-        <Typography variant="h5">Book not found</Typography>
-        <Button variant="contained" sx={{ mt: 2 }} onClick={goHome}>
+      <Button variant="contained" sx={{ mt: 2 }} onClick={goHome}>
           Back
         </Button>
       </Container>
     );
 
   return (
-    
+
     <Container sx={{ py: 3 }}>
-        
-      <Typography variant="h3" fontWeight={700} gutterBottom>
-        {book.title}
-      </Typography>
-
-      <Typography variant="h6">ISBN: {book.isbn}</Typography>
-      <Typography variant="h6">Year: {book.year}</Typography>
-
-      <Typography variant="h6" sx={{ mt: 2 }}>
-        Authors:
-      </Typography>
-
-      {book.authors?.map((a) => (
-        <Typography key={a.id}>• {a.name}</Typography>
-      ))}
+      <Stack>
+      <BookCard book={book} />
+      </Stack>
+     
 
       <Button variant="contained" sx={{ mt: 3 }} onClick={goHome}>
         Back
