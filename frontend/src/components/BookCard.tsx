@@ -25,7 +25,7 @@ type Props = {
 };
 
 export function BookCard({ book }: Props) {
-  const authors = book.authors ?? [];
+  const authors = Array.isArray(book.authors) ? book.authors : [];
 
   return (
     <Card
@@ -38,7 +38,7 @@ export function BookCard({ book }: Props) {
         "&:hover": { transform: "translateY(-2px)" },
       }}
     >
-      <CardActionArea  sx={{ height: "100%" }}>
+      
         <CardHeader
           title={
             <Typography variant="h6" fontWeight={700}>
@@ -84,7 +84,7 @@ export function BookCard({ book }: Props) {
             </Typography>
           )}
         </CardContent>
-      </CardActionArea>
+    
     </Card>
   );
 }

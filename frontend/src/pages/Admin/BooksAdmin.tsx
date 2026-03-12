@@ -23,13 +23,16 @@ import {
 import { useNavigate } from "react-router-dom";
 
 type Author = { id: number; name: string };
+
 type Book = {
   id: number;
   title: string;
   year: number;
   isbn: string;
-  authorIds: number[];
+  authors?: Author[];       
+  authorIds?: number[]; 
 };
+
 
 export default function AdminBooksPage() {
   const navigate = useNavigate();
@@ -105,14 +108,19 @@ export default function AdminBooksPage() {
   };
 
   const openEditModal = (book: Book) => {
-    reloadAuthors();  
+    reloadAuthors();
     setEditMode(true);
     setSelectedBook(book);
     setFieldErrors({});
     setTitle(book.title);
     setYear(String(book.year));
     setIsbn(book.isbn);
-    setSelectedAuthorList(authors.filter((a) => book.authorIds.includes(a.id)));
+  
+    const preselected = Array.isArray(book.authors)
+      ? book.authors
+      : authors.filter(a => book.authorIds?.includes(a.id) ?? false);
+  
+    setSelectedAuthorList(preselected);
     setOpen(true);
   };
 
@@ -131,23 +139,18 @@ export default function AdminBooksPage() {
     if (p5) f += `-${p5}`;
     return f;
   }
-const filteredBooks = books.filter(b => {
- 
-  if (filterTitle.trim() !== "") {
-    if (!b.title.toLowerCase().includes(filterTitle.toLowerCase())) {
-      return false;
+  const filteredBooks = books.filter(b => {
+    if (filterTitle.trim() !== "" &&
+        !b.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
+  
+    if (filterAuthor) {
+      const hasAuthor = Array.isArray(b.authors)
+        ? b.authors.some(a => a.id === filterAuthor.id)
+        : (b.authorIds?.includes(filterAuthor.id) ?? false);
+      if (!hasAuthor) return false;
     }
-  }
-
-
-  if (filterAuthor) {
-    if (!b.authorIds.includes(filterAuthor.id)) {
-      return false;
-    }
-  }
-
-  return true;
-});
+    return true;
+  });
   const saveBook = async () => {
     setFieldErrors({});
 
@@ -311,12 +314,10 @@ const filteredBooks = books.filter(b => {
                 <TableCell>{b.isbn}</TableCell>
                 <TableCell>{b.year}</TableCell>
                 <TableCell>
-                  {b.authorIds
-                    .map((id) => authors.find((a) => a.id === id)?.name)
-                    .filter(Boolean)
-                    .join(", ")}
+                  {Array.isArray(b.authors)
+                   ? b.authors.map(a => a.name).join(", ")
+                   : "Keine Autoren"}
                 </TableCell>
-
                 <TableCell>
                   <Button sx={{ mr: 1 }} onClick={() => openEditModal(b)}>
                     Bearbeiten

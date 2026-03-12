@@ -23,7 +23,9 @@ export function Header() {
     
         <Typography
           variant="h6"
-          sx={{ flexGrow: 1, fontWeight: 700 }}
+          onClick={goHome}
+         
+          sx={{ flexGrow: 1, fontWeight: 700, cursor: "pointer" }}
         >
           Bibliothek
         </Typography>
