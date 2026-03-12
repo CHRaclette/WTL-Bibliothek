@@ -1,14 +1,20 @@
-# WTL‑Bibliothek
-**Übungsprojekt „Bibliothek“**
 
-Dieses Projekt besteht aus einem **Node.js‑Backend (Express)** und einem **React‑Frontend (Vite + TypeScript)**.  
-Die Daten werden lokal in einer `library.json` gespeichert und über ein Data‑Management‑Layer (`services/library.js`) geladen und gespeichert.
+# WTL‑Bibliothek – SQL Version
+
+**Übungsprojekt „Bibliothek“ (Backend: Node.js + Express, Frontend: React + Vite + TypeScript)**
+
+Diese Version nutzt **SQLite** als Datenbank (statt `library.json`).
+Die Daten werden in einer echten relationalen Struktur gespeichert:
+
+- `books`
+- `authors`
+- `book_authors` (Join‑Tabelle: Many‑to‑Many)
+
+Ein Datenbank‑Layer (`/backend/db/*.js`) kapselt alle SQL‑Abfragen.
 
 ---
 
 ## Backend starten
-
-### 1. Abhängigkeiten installieren & Server starten
 
 ```bash
 cd backend
@@ -16,7 +22,17 @@ npm install
 npm run dev
 ```
 
-Der Backend‑Server läuft anschliessend auf http://localhost:3000.
+Der Server läuft unter:  
+http://localhost:3000
+
+### SQLite‑Datei
+Die Daten werden gespeichert in:
+```
+backend/data/library.db
+```
+
+Beim ersten Start wird die DB-Struktur automatisch erzeugt.  
+Der Seeder (`backend/data/seed.js`) legt Beispielbücher & Autoren an.
 
 ---
 
@@ -28,8 +44,37 @@ npm install
 npm run dev
 ```
 
-Der Frontend‑Server läuft anschliessend auf http://localhost:5173.  
-Der Vite‑Dev‑Server ist so konfiguriert, dass Requests an `/api/...` automatisch an das Backend weitergeleitet werden.
+Frontend läuft unter:  
+http://localhost:5173
+
+Vite proxied Requests automatisch weiter an das Backend:
+```
+/api/... → http://localhost:3000
+```
+
+---
+
+## Datenbankstruktur
+
+### Tabelle `authors`
+| Feld | Typ |
+|------|-----|
+| id | INTEGER PRIMARY KEY |
+| name | TEXT NOT NULL |
+
+### Tabelle `books`
+| Feld | Typ |
+|------|-----|
+| id | INTEGER PRIMARY KEY |
+| title | TEXT NOT NULL |
+| year | INTEGER |
+| isbn | TEXT |
+
+### Tabelle `book_authors`
+| Feld | Typ |
+|------|-----|
+| book_id | INTEGER FOREIGN KEY → books.id |
+| author_id | INTEGER FOREIGN KEY → authors.id |
 
 ---
 
@@ -37,20 +82,20 @@ Der Vite‑Dev‑Server ist so konfiguriert, dass Requests an `/api/...` automat
 
 ### Books
 
-| Methode | Route              | Beschreibung              |
-|---------|--------------------|---------------------------|
-| GET     | `/api/books`       | Alle Bücher abrufen       |
-| GET     | `/api/books/:id`   | Buch per ID abrufen       |
-| POST    | `/api/books`       | Neues Buch erstellen      |
-| DELETE  | `/api/books/:id`   | Buch löschen              |
-| PATCH   | `/api/books/:id`   | Daten überschreiben       |
+| Methode | Route | Beschreibung |
+|--------|--------|--------------|
+| GET | `/api/books` | Alle Bücher inkl. Autoren |
+| GET | `/api/books/:id` | Einzelnes Buch inkl. Autoren |
+| POST | `/api/books` | Neues Buch erstellen |
+| PATCH | `/api/books/:id` | Buch aktualisieren |
+| DELETE | `/api/books/:id` | Buch löschen |
 
-Beispiel `POST /api/books` Body:
+#### Beispiel **POST /api/books**
 ```json
 {
   "title": "Der Herr der Ringe",
   "year": 1954,
-  "isbn": "978-3-86680-192-9",
+  "isbn": "9783866801929",
   "authorIds": [1, 2]
 }
 ```
@@ -59,38 +104,39 @@ Beispiel `POST /api/books` Body:
 
 ### Authors
 
-| Methode | Route                | Beschreibung              |
-|---------|----------------------|---------------------------|
-| GET     | `/api/authors`       | Alle Autoren abrufen      |
-| GET     | `/api/authors/:id`   | Autor per ID abrufen      |
-| POST    | `/api/authors`       | Neuen Autor erstellen     |
-| DELETE  | `/api/authors/:id`   | Autor löschen             |
-| PATCH   | `/api/authors/:id`   | Daten überschreiben       |
+| Methode | Route | Beschreibung |
+|--------|--------|--------------|
+| GET | `/api/authors` | Alle Autoren |
+| GET | `/api/authors/:id` | Einzelner Autor |
+| POST | `/api/authors` | Autor erstellen |
+| PATCH | `/api/authors/:id` | Autor aktualisieren |
+| DELETE | `/api/authors/:id` | Autor löschen |
 
-Beispiel `POST /api/authors` Body:
+#### Beispiel **POST /api/authors**
 ```json
 { "name": "J. R. R. Tolkien" }
 ```
 
 ---
 
-### Validierung
+## Validierung
 
-#### Bücher
-- title: Pflichtfeld, nicht leer  
-- year: 4‑stellig, ≤ aktuelles Jahr  
-- isbn: 13 Ziffern, Format wird im Frontend formatiert  
-- authorIds: mindestens ein gültiger Autor muss existieren  
+### Books
+- **title:** Pflichtfeld, nicht leer, max. 100 Zeichen
+- **year:** muss Zahl sein, ≤ aktuelles Jahr
+- **isbn:** exakt 13 Ziffern
+- **authorIds:** mindestens ein Autor, IDs müssen existieren
 
-#### Autoren
-- name: Pflichtfeld  
-- Löschen nicht möglich, wenn der Autor in Büchern referenziert wird (→ 409)
+### Authors
+- **name:** Pflichtfeld
+- Löschen nur möglich, wenn der Autor **nicht** in `book_authors` referenziert ist
+- Sonst: **409 Conflict**
 
-Fehlerformat (Backend):
+#### Fehlerformat
 ```json
 {
   "error": {
-    "message": "Fehlerbeschreibung",
+    "message": "Validierungsfehler",
     "statusCode": 400,
     "code": "VALIDATION_ERROR",
     "details": {
@@ -104,13 +150,20 @@ Fehlerformat (Backend):
 
 ---
 
-### Mögliche Erweiterungen
+## Seed‑Daten
 
-- Login / Rollen für Admin  
-- API‑Filterung: `/api/books?title=...&authorId=...`  
-- Umstieg auf SQL / echte Datenbank  
-- Testplan + automatisierte Tests  
-- Soft‑Delete / Undo  
-- Autor‑Detailseite mit Buchliste  
-- Deployment‑Doku (Render / Vercel / Netlify)  
-- Kategorien/Genres für Bücher  
+Der Seeder (`/backend/data/seed.js`) erzeugt automatisch Beispielbücher nur, wenn die DB leer ist.
+Er enthält zahlreiche Klassiker und Autoren.
+
+---
+
+## Mögliche Erweiterungen
+
+- Authentifizierung (Admin‑Login)
+- Suche & Filter `/api/books?title=...&authorId=...`
+- Paginierung
+- Kategorien/Genres
+- Buch‑Cover Upload
+- Deployment (Render/Vercel)
+- Integrationstests
+
