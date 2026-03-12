@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const library = require('../Backend/src/services/library');
+
 const { notFound, errorHandler } = require('./src/middleware/error');
 
 app.use(express.json());
@@ -13,8 +13,10 @@ app.get('/', (req, res) => {
   res.json({ message: '👌 all loading 👌' });
 });
 
-//seeding
-app.locals.seed = library.seed();
+// Seeding SQLite
+require("./src/data/structure")
+require("./src/data/seeder")
+
 
 //routing
 app.use("/api/books", require("../Backend/src/routes/books"));

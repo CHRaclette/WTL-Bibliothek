@@ -67,23 +67,22 @@ function BooksPage() {
     };
   }, []);
 
-  const filteredBooks = useMemo(() => {
-    const titleNeedle = filterTitle.toLowerCase().trim();
-
-    return books.filter((b) => {
+  const filteredBooks = books.filter(b => {
+    if (filterTitle.trim() !== "" &&
+        !b.title.toLowerCase().includes(filterTitle.toLowerCase())) {
+      return false;
+    }
   
-      if (titleNeedle && !b.title.toLowerCase().includes(titleNeedle)) {
-        return false;
-      }
-
-      if (filterAuthor && !b.authorIds.includes(filterAuthor.id)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [books, filterTitle, filterAuthor]);
-
+    if (filterAuthor) {
+      const hasAuthor = Array.isArray(b.authors)
+        ? b.authors.some(a => a.id === filterAuthor.id)
+        : (b.authorIds?.includes(filterAuthor.id) ?? false);
+  
+      if (!hasAuthor) return false;
+    }
+  
+    return true;
+  });
   return (
     <>
       <Container maxWidth="lg" sx={{ py: 4 }}>

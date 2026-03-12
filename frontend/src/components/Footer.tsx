@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Link } from "@mui/material";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -8,14 +8,15 @@ export function Footer() {
       sx={{
         width: "100%",
         py: 2,
-        mt: 4,
+        mt: "auto",
         textAlign: "center",
         borderTop: "1px solid",
         borderColor: "divider",
+        backgroundColor: "background.paper",
       }}
     >
       <Typography variant="body2" color="text.secondary">
-        © {currentYear} Bibliothek – All rights reserved.
+        © {currentYear} Bibliothek - All rights reserved.
       </Typography>
     </Box>
   );

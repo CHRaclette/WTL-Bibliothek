@@ -6,7 +6,6 @@ import { Container, Typography, CircularProgress, Box, Button, Stack } from "@mu
 import { useNavigate } from "react-router-dom";
 import Alert from '@mui/material/Alert';
 import { BookCard } from "../components/BookCard";
-import { WidthFull } from "@mui/icons-material";
 
 
 type Author = { id: number; name: string };
@@ -38,6 +37,7 @@ function BookDetailsPage() {
       const data: Book = await res.json();
       setBook(data);
       setLoading(false);
+      console.log(data)
     })();
   }, [id]);
 
@@ -51,11 +51,7 @@ function BookDetailsPage() {
   if (!book)
     return (
       <Container sx={{ py: 3 }}>
-        
-       
-
         <Typography variant="h5">Buch nicht gefunden</Typography>
-        
         <Alert severity="warning">
         <AlertTitle>Nicht gefunden</AlertTitle>
         Dieses Buch existiert nicht.
@@ -64,16 +60,14 @@ function BookDetailsPage() {
           Back
         </Button>
       </Container>
+      
     );
 
   return (
-
     <Container sx={{ py: 3 }}>
       <Stack>
       <BookCard book={book} />
       </Stack>
-     
-
       <Button variant="contained" sx={{ mt: 3 }} onClick={goHome}>
         Back
       </Button>

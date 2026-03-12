@@ -13,11 +13,9 @@ export default function AdminPage() {
         <Tab label="Bücher" />
         <Tab label="Autoren" />
       </Tabs>
-
       <Box hidden={tab !== 0}>
         <AdminBooksPage />
       </Box>
-
       <Box hidden={tab !== 1}>
         <AdminAuthorsPage />
       </Box>
