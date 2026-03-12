@@ -38,6 +38,7 @@ function BookDetailsPage() {
       const data: Book = await res.json();
       setBook(data);
       setLoading(false);
+      console.log(data)
     })();
   }, [id]);
 
@@ -72,8 +73,6 @@ function BookDetailsPage() {
       <Stack>
       <BookCard book={book} />
       </Stack>
-     
-
       <Button variant="contained" sx={{ mt: 3 }} onClick={goHome}>
         Back
       </Button>

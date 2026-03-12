@@ -16,10 +16,11 @@ exports.removeByBook = (bookId) => {
   `).run(bookId);
 };
 
-exports.getAuthorsForBook = (authorId) => {
+exports.getAuthorsForBook = (bookId) => {
   return db.prepare(`
-    SELECT book_id
-    FROM book_authors
-    WHERE author_id = ?
-  `).all(authorId);
+    SELECT a.id, a.name
+    FROM authors a
+    JOIN book_authors ba ON ba.author_id = a.id
+    WHERE ba.book_id = ?
+  `).all(bookId);
 };
