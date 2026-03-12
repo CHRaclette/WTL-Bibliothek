@@ -16,7 +16,7 @@ export function Footer() {
       }}
     >
       <Typography variant="body2" color="text.secondary">
-        © {currentYear} Bibliothek – All rights reserved.
+        © {currentYear} Bibliothek - All rights reserved.
       </Typography>
     </Box>
   );

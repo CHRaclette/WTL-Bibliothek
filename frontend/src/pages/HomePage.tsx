@@ -1,14 +1,23 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Container,
   Typography,
-  CircularProgress,
   Box,
   TextField,
   Alert,
-  AlertTitle
+  AlertTitle,
+  InputAdornment,
+  Card,
+  CardActionArea,
+  CardContent,
+  Divider,
+  Chip,
+  Tooltip,
+  Skeleton,
+  Stack,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 
 type Book = {
   id: number;
@@ -20,11 +29,6 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-
-
-  const filteredBooks = books.filter((book) =>
-    book.title.toLowerCase().includes(query.toLowerCase())
-  );
 
   useEffect(() => {
     (async () => {
@@ -39,25 +43,58 @@ export function HomePage() {
           throw new Error(msg);
         }
         const data: Book[] = await res.json();
-        setBooks(data);
+        setBooks(Array.isArray(data) ? data : []);
       } catch (e: any) {
-        setError(e.message ?? "Unknown error");
+        setError(e?.message ?? "Unknown error");
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
+  const filteredBooks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return books;
+    return books.filter((b) => b.title.toLowerCase().includes(q));
+  }, [books, query]);
 
-  if (loading)
+
+  if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
+      <Container sx={{ py: 3 }}>
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 2 }}>
+          Titel Übersicht
+        </Typography>
 
- 
-  if (error)
+        <TextField
+          fullWidth
+          label="Nach Titel suchen"
+          placeholder="Titel Suchen"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="disabled" />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <Stack spacing={2}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} elevation={2} sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Skeleton variant="text" width="70%" height={28} />
+                <Skeleton variant="text" width="40%" />
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      </Container>
+    );
+  }
+
+  if (error) {
     return (
       <Container sx={{ py: 3 }}>
         <Alert severity="error">
@@ -66,23 +103,53 @@ export function HomePage() {
         </Alert>
       </Container>
     );
+  }
 
   return (
     <Container sx={{ py: 3 }}>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        Titel Übersicht
-      </Typography>
+   
+      <Box
+        sx={{
+          mb: 2.5,
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 2,
+          flexWrap: "wrap",
+        }}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          Titel Übersicht
+        </Typography>
 
+        <Chip
+          label={
+            books.length > 0
+              ? `${filteredBooks.length} von ${books.length} Titel${
+                  books.length !== 1 ? "n" : ""
+                }`
+              : "0 Titel"
+          }
+          color="default"
+          size="small"
+          sx={{ alignSelf: "center" }}
+        />
+      </Box>
 
+   
       <TextField
         fullWidth
         label="Nach Titel suchen"
+        placeholder="Titel Suchen"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        InputProps={{
+         
+        }}
         sx={{ mb: 3 }}
       />
 
-
+    
       {books.length === 0 && (
         <Alert severity="warning" sx={{ mt: 2 }}>
           <AlertTitle>Hinweis</AlertTitle>
@@ -90,36 +157,64 @@ export function HomePage() {
         </Alert>
       )}
 
-  
-      {filteredBooks.length > 0 &&
-        filteredBooks.map((book) => (
-          <Typography
-            key={book.id}
-            component={Link}
-            to={`/books/${book.id}`}
-            sx={{
-              fontSize: "1.2rem",
-              mb: 2,
-              display: "block",
-              width: "fit-content",
-              textDecoration: "none",
-              color: "black",
-              "&:hover": {
-                color: "red",
-                transform: "scale(1.03)",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.15)"
-              }
-            }}
-          >
-            {book.title}
-            <Typography variant="body2" color="text.secondary">
-              Weitere Details ansehen →
-            </Typography>
-          </Typography>
-        ))}
+
+      {filteredBooks.length > 0 && (
+        <Stack spacing={1.5}>
+          {filteredBooks.map((book) => {
+            const title = book.title ?? "";
+        
+            const Title = (
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                }}
+              >
+                {title}
+              </Typography>
+            );
+
+            return (
+              <Card
+                key={book.id}
+                elevation={2}
+                sx={{
+                  borderRadius: 2,
+                  transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                  "&:hover": { transform: "translateY(-2px)", boxShadow: 4 },
+                }}
+              >
+                <CardActionArea
+                  component={RouterLink}
+                  to={`/books/${book.id}`}
+                  sx={{ p: 2 }}
+                >
+                  <Tooltip title={title} placement="top" enterDelay={500}>
+                    <Box>{Title}</Box>
+                  </Tooltip>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    Weitere Details ansehen →
+                  </Typography>
+                </CardActionArea>
+
+                <Divider sx={{ opacity: 0.3 }} />
+              </Card>
+            );
+          })}
+        </Stack>
+      )}
 
       {filteredBooks.length === 0 && books.length > 0 && (
-        <Alert severity="info">
+        <Alert severity="info" sx={{ mt: 2 }}>
           <AlertTitle>Keine Treffer</AlertTitle>
           Kein Buch passt zu deiner Suche.
         </Alert>
@@ -127,3 +222,4 @@ export function HomePage() {
     </Container>
   );
 }
+``

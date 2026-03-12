@@ -1,12 +1,13 @@
 import * as React from "react";
 import {
+  Box,
   Card,
-  CardActionArea,
   CardContent,
   CardHeader,
   Chip,
   Divider,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
@@ -35,56 +36,66 @@ export function BookCard({ book }: Props) {
         borderRadius: 2,
         width: 500,
         transition: "transform 0.15s ease, box-shadow 0.15s ease",
-        "&:hover": { transform: "translateY(-2px)" },
+        "&:hover": { transform: "translateY(-2px)", boxShadow: 4 },
       }}
     >
-      
-        <CardHeader
-          title={
-            <Typography variant="h6" fontWeight={700}>
+      <CardHeader
+        title={
+          <Tooltip title={book.title} placement="top" enterDelay={500}>
+            <Typography
+              variant="h6"
+              fontWeight={700}
+              sx={{
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }}
+            >
               {book.title}
             </Typography>
-          }
-          subheader={
-            <Typography variant="body2" color="text.secondary">
-              ISBN: {book.isbn}
-            </Typography>
-          }
-          sx={{ pb: 0 }}
-        />
+          </Tooltip>
+        }
+        subheader={
+          <Typography variant="body2" color="text.secondary">
+            ISBN: {book.isbn}
+          </Typography>
+        }
+        sx={{ pb: 0 }}
+      />
 
-        <CardContent sx={{ pt: 1.5 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            spacing={1}
-            sx={{ mb: 1.5 }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              Erscheinungsjahr: <strong>{book.year}</strong>
-            </Typography>
+      <CardContent sx={{ pt: 1.5 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap"
+          spacing={1}
+          sx={{ mb: 1.5 }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Erscheinungsjahr: <strong>{book.year}</strong>
+          </Typography>
 
-            <Typography variant="body2" color="text.secondary">
-              {authors.length}
-            </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {authors.length}
+          </Typography>
+        </Stack>
+
+        <Divider sx={{ mb: 1.5 }} />
+
+        {authors.length > 0 ? (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {authors.map((a) => (
+              <Chip key={a.id} label={a.name} size="small" />
+            ))}
           </Stack>
-
-          <Divider sx={{ mb: 1.5 }} />
-          {authors.length > 0 ? (
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {authors.map((a) => (
-                <Chip key={a.id} label={a.name} size="small" />
-              ))}
-            </Stack>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Keine Autorendaten vorhanden.
-            </Typography>
-          )}
-        </CardContent>
-    
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Keine Autorendaten vorhanden.
+          </Typography>
+        )}
+      </CardContent>
     </Card>
   );
 }
