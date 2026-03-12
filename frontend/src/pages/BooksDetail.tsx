@@ -52,11 +52,7 @@ function BookDetailsPage() {
   if (!book)
     return (
       <Container sx={{ py: 3 }}>
-        
-       
-
         <Typography variant="h5">Buch nicht gefunden</Typography>
-        
         <Alert severity="warning">
         <AlertTitle>Nicht gefunden</AlertTitle>
         Dieses Buch existiert nicht.
@@ -65,10 +61,10 @@ function BookDetailsPage() {
           Back
         </Button>
       </Container>
+      
     );
 
   return (
-
     <Container sx={{ py: 3 }}>
       <Stack>
       <BookCard book={book} />

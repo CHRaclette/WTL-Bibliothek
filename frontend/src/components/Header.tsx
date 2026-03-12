@@ -18,7 +18,6 @@ export function Header() {
     <AppBar position="static" sx={{ mb: 3 }}>
       <Toolbar sx={{ display: "flex", alignItems: "center" }}>
         
-        {/* Left side: Logo */}
         <Typography
           variant="h6"
           onClick={goHome}
@@ -32,7 +31,6 @@ export function Header() {
           Bibliothek
         </Typography>
 
-        {/* Right side: Navigation */}
         <Box sx={{ display: "flex", gap: 1 }}>
           
           <Button

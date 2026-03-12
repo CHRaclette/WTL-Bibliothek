@@ -273,7 +273,7 @@ export default function AdminBooksPage() {
     alignItems="center"
   >
     <TextField
-      label="Nach Titel filtern"
+      label="Titel Suchen"
       value={filterTitle}
       onChange={(e) => setFilterTitle(e.target.value)}
       fullWidth
