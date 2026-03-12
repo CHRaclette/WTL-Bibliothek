@@ -6,7 +6,6 @@ import { Container, Typography, CircularProgress, Box, Button, Stack } from "@mu
 import { useNavigate } from "react-router-dom";
 import Alert from '@mui/material/Alert';
 import { BookCard } from "../components/BookCard";
-import { WidthFull } from "@mui/icons-material";
 
 
 type Author = { id: number; name: string };

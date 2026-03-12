@@ -56,7 +56,7 @@ export default function AdminAuthorsPage() {
     loadData();
   }, [open]);
 
-  const openCreate = () => {
+  const openCreate = () => {  
     setEditMode(false);
     setSelectedAuthor(null);
     setAuthorName("");

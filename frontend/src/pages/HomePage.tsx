@@ -125,9 +125,7 @@ export function HomePage() {
         <Chip
           label={
             books.length > 0
-              ? `${filteredBooks.length} von ${books.length} Titel${
-                  books.length !== 1 ? "n" : ""
-                }`
+              ? `${filteredBooks.length} von ${books.length} Titel`
               : "0 Titel"
           }
           color="default"
@@ -156,7 +154,6 @@ export function HomePage() {
           Es sind aktuell keine Bücher vorhanden.
         </Alert>
       )}
-
 
       {filteredBooks.length > 0 && (
         <Stack spacing={1.5}>

@@ -1,56 +1,96 @@
 const db = require("../data/library");
+const crypto = require("crypto");
 
 
 exports.getAll = () => {
-  return db.prepare(`
-    SELECT 
-      b.id,
-      b.title,
-      b.year,
-      b.isbn
-    FROM books b
-    ORDER BY b.title ASC
+  const books = db.prepare(`
+    SELECT id, title, year, isbn
+    FROM books
+    ORDER BY title ASC
   `).all();
+
+
+  const getAuthors = db.prepare(`
+    SELECT a.id, a.name
+    FROM authors a
+    JOIN book_authors ba ON ba.author_id = a.id
+    WHERE ba.book_id = ?
+  `);
+
+  return books.map(b => ({
+    ...b,
+    authors: getAuthors.all(b.id)
+  }));
 };
 
 
 exports.getById = (id) => {
-  return db
-    .prepare(
-      `SELECT 
-        b.id,
-        b.title,
-        b.year,
-        b.isbn,
-        GROUP_CONCAT(a.name, ', ') AS authors
-      FROM books b
-      LEFT JOIN book_authors ba ON ba.book_id = b.id
-      LEFT JOIN authors a ON a.id = ba.author_id
-      WHERE b.id = ?
-      GROUP BY b.id`
-    )
-    .get(id);
+  const book = db.prepare(`
+    SELECT id, title, year, isbn
+    FROM books
+    WHERE id = ?
+  `).get(id);
+
+  if (!book) return null;
+
+  const authors = db.prepare(`
+    SELECT a.id, a.name
+    FROM authors a
+    JOIN book_authors ba ON ba.author_id = a.id
+    WHERE ba.book_id = ?
+  `).all(id);
+
+  return { ...book, authors };
 };
 
-exports.create = (title, year, isbn) => {
-  const result = db
-    .prepare(
-      "INSERT INTO books (title, year, isbn) VALUES (?, ?, ?)"
-    )
-    .run(title, year, isbn);
 
-  return result.lastInsertRowid;
+exports.create = (title, year, isbn, authorIds) => {
+  const id = crypto.randomUUID();
+
+  db.prepare(`
+    INSERT INTO books (id, title, year, isbn)
+    VALUES (?, ?, ?, ?)
+  `).run(id, title, year, isbn);
+
+  const link = db.prepare(`
+    INSERT INTO book_authors (book_id, author_id)
+    VALUES (?, ?)
+  `);
+
+  for (const aid of authorIds) {
+    link.run(id, aid);
+  }
+
+  return id;
 };
 
 
 exports.update = (id, title, year, isbn) => {
-  return db
-    .prepare(
-      "UPDATE books SET title = ?, year = ?, isbn = ? WHERE id = ?"
-    )
-    .run(title, year, isbn, id);
+  db.prepare(`
+    UPDATE books
+    SET title = ?, year = ?, isbn = ?
+    WHERE id = ?
+  `).run(title, year, isbn,id);
 };
+
+
+exports.removeByBook = (bookId) => {
+  db.prepare(`
+    DELETE FROM book_authors
+    WHERE book_id = ?
+  `).run(bookId);
+};
+
+
+exports.add = (bookId, authorId) => {
+  db.prepare(`
+    INSERT INTO book_authors (book_id, author_id)
+    VALUES (?, ?)
+  `).run(bookId, authorId);
+};
+
 
 exports.remove = (id) => {
   return db.prepare("DELETE FROM books WHERE id = ?").run(id);
 };
+

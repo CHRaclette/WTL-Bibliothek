@@ -1,5 +1,5 @@
 const db = require("../data/library");
-
+const crypto = require("crypto");
 
 exports.getAll = () => {
   return db.prepare("SELECT * FROM authors ORDER BY name ASC").all();
@@ -10,15 +10,11 @@ exports.getById = (id) => {
   return db.prepare("SELECT * FROM authors WHERE id = ?").get(id);
 };
 
-
-exports.create = (name) => {
-  const result = db
-    .prepare("INSERT INTO authors (name) VALUES (?)")
-    .run(name);
-
-  return result.lastInsertRowid;
+exports.createAuthor = (name) => {
+  const id = crypto.randomUUID();
+  db.prepare("INSERT INTO authors (id, name) VALUES (?, ?)").run(id, name);
+  return id;
 };
-
 
 exports.update = (id, name) => {
   return db

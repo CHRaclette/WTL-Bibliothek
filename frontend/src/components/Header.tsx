@@ -47,7 +47,6 @@ export function Header() {
           >
             Repo
           </Button>
-
           <Button
             variant="outlined"
             color="inherit"
@@ -62,7 +61,6 @@ export function Header() {
           >
             Bugs
           </Button>
-
           <Button color="inherit" onClick={goHome}>Home</Button>
           <Button color="inherit" onClick={goBooks}>Bücher</Button>
           <Button color="inherit" onClick={goAdmin}>Admin</Button>

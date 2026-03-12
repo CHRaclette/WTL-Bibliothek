@@ -1,11 +1,10 @@
-const library = require("../services/library");
 const { AppError, catchAsync } = require("../middleware/error");
-
 const Authors = require("../db/authors");
-const BookAuthors = require("../db/bookAuthors")
+const BookAuthors = require("../db/bookAuthors");
+
 
 exports.getAuthors = catchAsync((req, res) => {
-  let result = Authors.getAll(); 
+  let result = Authors.getAll();
 
   const { name } = req.query;
   if (name) {
@@ -16,24 +15,18 @@ exports.getAuthors = catchAsync((req, res) => {
   res.json(result);
 });
 
+
 exports.getAuthorById = catchAsync((req, res) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    throw new AppError("Invalid id", 400, "VALIDATION_ERROR", {
-      fieldErrors: { id: "Ungültige Autoren-ID." },
-    });
-  }
+  const id = req.params.id; 
 
   const author = Authors.getById(id);
-
   if (!author) {
-    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", {
-      fieldErrors: { id: "Dieser Autor existiert nicht." },
-    });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND");
   }
 
   return res.json(author);
 });
+
 
 exports.createAuthor = catchAsync((req, res) => {
   const { name } = req.body ?? {};
@@ -41,38 +34,28 @@ exports.createAuthor = catchAsync((req, res) => {
   const fieldErrors = {};
   if (!name || name.trim() === "") {
     fieldErrors.name = "Name darf nicht leer sein.";
-  }
-  if (name.length >= 50) {
+  } else if (name.length >= 50) {
     fieldErrors.name = "Name ist zu lang.";
   }
+
   if (Object.keys(fieldErrors).length > 0) {
-    throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", {
-      fieldErrors,
-    });
+    throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", { fieldErrors });
   }
 
-  const id = Authors.create(name);
-
-  return res.status(201).json({ id, name });
+  const id = Authors.createAuthor(name.trim());
+  return res.status(201).json({ id, name: name.trim() });
 });
 
 exports.deleteAuthor = catchAsync((req, res) => {
-  const id = Number(req.params.id);
-
-  if (Number.isNaN(id)) {
-    throw new AppError("Invalid id", 400, "VALIDATION_ERROR", {
-      fieldErrors: { id: "Ungültige Autoren-ID." }
-    });
-  }
+  const id = req.params.id; 
 
   const author = Authors.getById(id);
   if (!author) {
-    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", {
-      fieldErrors: { id: "Dieser Autor existiert nicht." }
-    });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND");
   }
 
-  const references = BookAuthors.getAuthorsForBook(id);
+
+  const references = BookAuthors.getBooksForAuthor(id);
 
   if (references.length > 0) {
     throw new AppError(
@@ -81,10 +64,10 @@ exports.deleteAuthor = catchAsync((req, res) => {
       "AUTHOR_REFERENCED",
       {
         fieldErrors: {
-          id: `Autor kann nicht gelöscht werden, er wird in Büchern verwendet: ${references
-            .map((b) => b.book_id)
-            .join(", ")}`
-        }
+          id: `Autor wird in Büchern verwendet: ${references
+            .map(r => r.book_id)
+            .join(", ")}`,
+        },
       }
     );
   }
@@ -93,50 +76,37 @@ exports.deleteAuthor = catchAsync((req, res) => {
 
   return res.json({
     message: "Author deleted",
-    author
+    author,
   });
 });
 
 exports.patchAuthor = catchAsync((req, res) => {
-  const id = Number(req.params.id);
-
-  if (Number.isNaN(id)) {
-    throw new AppError("Invalid id", 400, "VALIDATION_ERROR", {
-      fieldErrors: { id: "Ungültige Autoren-ID." }
-    });
-  }
+  const id = req.params.id; 
 
   const author = Authors.getById(id);
   if (!author) {
-    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND", {
-      fieldErrors: { id: "Dieser Autor existiert nicht." }
-    });
+    throw new AppError("Author not found", 404, "AUTHOR_NOT_FOUND");
   }
 
   const { name } = req.body ?? {};
   const fieldErrors = {};
 
-  if (name !== undefined && name.trim() === "") {
-    fieldErrors.name = "Name darf nicht leer sein.";
-  }
-
-  if (name !== undefined && name.length >= 50) {
-    fieldErrors.name = "Name ist zu lang.";
+  if (name !== undefined) {
+    if (name.trim() === "") {
+      fieldErrors.name = "Name darf nicht leer sein.";
+    } else if (name.length >= 50) {
+      fieldErrors.name = "Name ist zu lang.";
+    }
   }
 
   if (Object.keys(fieldErrors).length > 0) {
-    throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", {
-      fieldErrors
-    });
+    throw new AppError("Validierungsfehler", 400, "VALIDATION_ERROR", { fieldErrors });
   }
 
   if (name !== undefined) {
-    Authors.update(id, name);
+    Authors.update(id, name.trim());
   }
 
   const updated = Authors.getById(id);
-
   return res.json(updated);
 });
-
-
