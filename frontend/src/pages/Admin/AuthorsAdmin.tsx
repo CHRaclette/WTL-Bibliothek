@@ -19,6 +19,7 @@ import {
   DialogActions,
   Stack,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 type Author = { id: number; name: string };
 
@@ -38,13 +39,27 @@ export default function AdminAuthorsPage() {
   const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
   const closeDeleteError = () => setDeleteErrorMsg(null);
   const [filterAuthorname, setFilterAuthorname] = useState("");
+  const navigator = useNavigate();
+
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/authors", {credentials: "include"});
-      if (!res.ok) throw new Error("Backend Error");
-      setAuthors(await res.json());
+      const authorsRes = await fetch("/api/authors", {
+        credentials: "include"
+      });
+  
+      if (authorsRes.status === 401 || authorsRes.status === 403) {
+        navigator("/");
+        return;
+      }
+      if (!authorsRes.ok) {
+        throw new Error("Backend Error");
+      }
+  
+      const data = await authorsRes.json();
+      setAuthors(data);
+  
     } catch (e: any) {
       setError(e.message);
     } finally {

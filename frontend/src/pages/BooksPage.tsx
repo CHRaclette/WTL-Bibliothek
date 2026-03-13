@@ -37,7 +37,7 @@ function BooksPage() {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+    const navigate = useNavigate();
   const [filterTitle, setFilterTitle] = useState('');
   const [filterAuthor, setFilterAuthor] = useState<Author | null>(null);
   const [user, setUser] = React.useState<{ id: string; role: string } | null>(null);
