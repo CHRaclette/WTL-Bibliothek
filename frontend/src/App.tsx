@@ -10,6 +10,7 @@ export default function App() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
+        background: "linear-gradient(160deg, #98C1D9 0%, #3D5A80 100%)",
       }}
     >
       <Header />

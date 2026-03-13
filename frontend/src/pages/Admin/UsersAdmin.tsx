@@ -19,14 +19,13 @@ import {
   DialogActions,
   Stack,
   MenuItem,
+  Box,
+  CircularProgress,
+  Container
 } from "@mui/material";
 
 type Role = "admin" | "user";
-type User = {
-  id: string;
-  username: string;
-  role: Role;
-};
+type User = { id: string; username: string; role: Role };
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -52,16 +51,21 @@ export default function AdminUsersPage() {
 
   const [filter, setFilter] = useState("");
 
+  const palette = {
+    primary: "#3D5A80",
+    accent: "#98C1D9",
+    soft: "#E0FBFC",
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/users", {credentials: "include"} );
+      const res = await fetch("/api/users", { credentials: "include" });
       if (!res.ok) throw new Error("Backend Error");
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      setError(e.message ?? "Unbekannter Fehler");
+      setError(e.message ?? "Fehler");
     } finally {
       setLoading(false);
     }
@@ -71,7 +75,6 @@ export default function AdminUsersPage() {
     loadData();
   }, []);
 
- 
   const openCreate = () => {
     setEditMode(false);
     setUsername("");
@@ -82,12 +85,12 @@ export default function AdminUsersPage() {
     setOpen(true);
   };
 
-  const openEdit = (user: User) => {
+  const openEdit = (u: User) => {
     setEditMode(true);
-    setSelectedUser(user);
-    setUsername(user.username);
-    setPassword(""); 
-    setRole(user.role);
+    setSelectedUser(u);
+    setUsername(u.username);
+    setPassword("");
+    setRole(u.role);
     setFieldErrors({});
     setOpen(true);
   };
@@ -100,7 +103,7 @@ export default function AdminUsersPage() {
     const errors: Record<string, string> = {};
 
     if (!username.trim()) errors.username = "Benutzername darf nicht leer sein.";
-    if (username.trim().length > 50) errors.username = "Benutzername ist zu lang.";
+    if (username.length > 50) errors.username = "Benutzername ist zu lang.";
 
     if (!editMode) {
       if (!password.trim()) errors.password = "Passwort ist erforderlich.";
@@ -111,13 +114,11 @@ export default function AdminUsersPage() {
     }
 
     if (role !== "admin" && role !== "user") errors.role = "Ungültige Rolle.";
-    
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
- 
   const saveUser = async () => {
     if (!validate()) return;
 
@@ -135,36 +136,41 @@ export default function AdminUsersPage() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-        credentials: "include"
+        credentials: "include",
       });
 
       const json = await res.json();
+
       if (!res.ok) {
         setError(json?.error?.message || "Fehler beim Speichern");
         return;
       }
-      
-
 
       setOpen(false);
       setSuccessMsg(editMode ? "User aktualisiert!" : "User erstellt!");
       loadData();
     } catch (e: any) {
-      setError(e.message ?? "Unbekannter Fehler");
+      setError(e.message ?? "Fehler");
     }
   };
 
-
   const deleteUser = async (id: string) => {
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(`/api/users/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (res.status === 403) {
+        setError("Es muss mindestens ein Admin vorhanden sein!");
+        return;
+      }
+
       if (!res.ok) {
         setError("Fehler beim Löschen");
         return;
-      } else if (res.status === 403) {
-        setError("Es muss mindestens ein Admin-User vorhanden sein!");
-        return;
       }
+
       setSuccessMsg("User gelöscht!");
       loadData();
     } catch (e: any) {
@@ -172,112 +178,166 @@ export default function AdminUsersPage() {
     }
   };
 
+  if (loading)
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
 
-  if (loading) return <p>Loading…</p>;
   if (error)
     return (
-      <Alert severity="error">
-        <AlertTitle>Fehler</AlertTitle>
-        {error}
-      </Alert>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+          p: 3,
+        }}
+      >
+        <Alert severity="error">
+          <AlertTitle>Fehler</AlertTitle>
+          {error}
+        </Alert>
+      </Box>
     );
 
   return (
-    <>
-      <Snackbar
-        open={!!successMsg}
-        autoHideDuration={3000}
-        onClose={() => setSuccessMsg(null)}
-      >
-        <Alert severity="success" variant="filled">
-          <AlertTitle>Erfolg</AlertTitle>
-          {successMsg}
-        </Alert>
-      </Snackbar>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+        py: 6,
+        px: 2,
+      }}
+    >
+      <Container maxWidth="lg">
+        <Typography variant="h4" fontWeight={900} color="#fff" sx={{ mb: 3 }}>
+          User verwalten
+        </Typography>
 
-      <Typography variant="h5">User verwalten</Typography>
-
-      <TextField
-        label="Nach Benutzername filtern"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        sx={{ my: 2 }}
-        fullWidth
-      />
-
-      <Button variant="contained" sx={{ my: 2 }} onClick={openCreate}>
-        Neuen User erstellen
-      </Button>
-
-      <TableContainer component={Paper} sx={{ mb: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Benutzername</TableCell>
-              <TableCell>Rolle</TableCell>
-              <TableCell>ID</TableCell>
-              <TableCell>Aktionen</TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {filteredUsers.map((u) => (
-              <TableRow key={u.id}>
-                <TableCell>{u.username}</TableCell>
-                <TableCell>{u.role}</TableCell>
-                <TableCell>{u.id}</TableCell>
-                <TableCell>
-                  <Button onClick={() => openEdit(u)} sx={{ mr: 1 }}>
-                    Bearbeiten
-                  </Button>
-                  <Button
-                    color="error"
-                    sx={{ mr: 1 }}
-                    onClick={() => {
-                      setUserToDelete(u);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    Löschen
-                  </Button>
-                  <Button
-                    color="warning"
-                    onClick={() => {
-                      setUserToReset(u);
-                      setResetDialogOpen(true);
-                    }}
-                  >
-                    Zurücksetzen
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {users.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  <Alert severity="info">Keine User vorhanden.</Alert>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-    
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>
-          {editMode ? "User bearbeiten" : "Neuen User erstellen"}
-        </DialogTitle>
-
-        <DialogContent
-          onKeyDown={(e) => {
-          if (e.key === "Enter") {
-          e.preventDefault();
-          saveUser();
-          }
+        <Box
+          sx={{
+            bgcolor: palette.soft,
+            borderRadius: 4,
+            p: 3,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            mb: 4,
           }}
+        >
+          <TextField
+            fullWidth
+            label="Nach Benutzername filtern"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            sx={{
+              my: 2,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 3,
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+
+          <Button
+            variant="contained"
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              py: 1.2,
+              backgroundColor: palette.primary,
+              "&:hover": { backgroundColor: "#2b3f59" },
+            }}
+            onClick={openCreate}
           >
+            Neuen User erstellen
+          </Button>
+
+          <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Benutzername</strong></TableCell>
+                  <TableCell><strong>Rolle</strong></TableCell>
+                  <TableCell><strong>ID</strong></TableCell>
+                  <TableCell><strong>Aktionen</strong></TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {filteredUsers.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell>{u.username}</TableCell>
+                    <TableCell>{u.role}</TableCell>
+                    <TableCell>{u.id}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="outlined"
+                          sx={{ borderRadius: 2 }}
+                          onClick={() => openEdit(u)}
+                        >
+                          Bearbeiten
+                        </Button>
+
+                        <Button
+                          color="error"
+                          variant="contained"
+                          sx={{ borderRadius: 2 }}
+                          onClick={() => {
+                            setUserToDelete(u);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          Löschen
+                        </Button>
+
+                        <Button
+                          color="warning"
+                          variant="contained"
+                          sx={{ borderRadius: 2 }}
+                          onClick={() => {
+                            setUserToReset(u);
+                            setResetDialogOpen(true);
+                          }}
+                        >
+                          Zurücksetzen
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4}>
+                      <Alert severity="info">Keine User vorhanden.</Alert>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Container>
+
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>{editMode ? "User bearbeiten" : "Neuen User erstellen"}</DialogTitle>
+        <DialogContent
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 3,
+              backgroundColor: "#fff",
+            },
+          }}
+        >
           <TextField
             fullWidth
             label="Benutzername"
@@ -287,9 +347,9 @@ export default function AdminUsersPage() {
             helperText={fieldErrors.username}
             sx={{ mt: 2 }}
           />
-     
+
           <TextField
-          disabled={editMode}
+            disabled={editMode}
             fullWidth
             label="Passwort"
             value={password}
@@ -316,14 +376,12 @@ export default function AdminUsersPage() {
 
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Abbrechen</Button>
-          <Button variant="contained" 
-          onClick={saveUser}>
+          <Button variant="contained" onClick={saveUser}>
             {editMode ? "Speichern" : "Erstellen"}
           </Button>
         </DialogActions>
       </Dialog>
 
-   
       <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
         <DialogTitle>Passwort zurücksetzen?</DialogTitle>
         <DialogContent>
@@ -348,11 +406,7 @@ export default function AdminUsersPage() {
         </DialogActions>
       </Dialog>
 
-   
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>User löschen?</DialogTitle>
         <DialogContent>
           User <strong>{userToDelete?.username}</strong> wirklich löschen?
@@ -371,6 +425,17 @@ export default function AdminUsersPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+
+      <Snackbar
+        open={!!successMsg}
+        autoHideDuration={3000}
+        onClose={() => setSuccessMsg(null)}
+      >
+        <Alert severity="success" variant="filled">
+          <AlertTitle>Erfolg</AlertTitle>
+          {successMsg}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }

@@ -18,6 +18,9 @@ import {
   TextField,
   DialogActions,
   Stack,
+  Box,
+  CircularProgress,
+  Container
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -27,39 +30,45 @@ export default function AdminAuthorsPage() {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<Author | null>(null);
+
   const [authorName, setAuthorName] = useState("");
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const closeSuccess = () => setSuccessMsg(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [authorToDelete, setAuthorToDelete] = useState<Author | null>(null);
   const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
-  const closeDeleteError = () => setDeleteErrorMsg(null);
-  const [filterAuthorname, setFilterAuthorname] = useState("");
-  const navigator = useNavigate();
 
+  const [filterAuthorname, setFilterAuthorname] = useState("");
+
+  const navigate = useNavigate();
+
+  const palette = {
+    primary: "#3D5A80",
+    accent: "#98C1D9",
+    soft: "#E0FBFC",
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
       const authorsRes = await fetch("/api/authors", {
-        credentials: "include"
+        credentials: "include",
       });
-  
+
       if (authorsRes.status === 401 || authorsRes.status === 403) {
-        navigator("/");
+        navigate("/");
         return;
       }
-      if (!authorsRes.ok) {
-        throw new Error("Backend Error");
-      }
-  
+
+      if (!authorsRes.ok) throw new Error("Backend Error");
+
       const data = await authorsRes.json();
       setAuthors(data);
-  
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -71,7 +80,7 @@ export default function AdminAuthorsPage() {
     loadData();
   }, [open]);
 
-  const openCreate = () => {  
+  const openCreate = () => {
     setEditMode(false);
     setSelectedAuthor(null);
     setAuthorName("");
@@ -86,20 +95,23 @@ export default function AdminAuthorsPage() {
     setFieldErrors({});
     setOpen(true);
   };
+
   const filteredAuthors = authors.filter((a) =>
     a.name.toLowerCase().includes(filterAuthorname.toLowerCase())
   );
+
   const saveAuthor = async () => {
     setFieldErrors({});
 
-    if (authorName.trim() === "") {
+    if (!authorName.trim()) {
       setFieldErrors({ name: "Name darf nicht leer sein." });
       return;
     }
+
     if (authorName.length >= 50) {
-      setFieldErrors( {name: "Name ist zu lang"});
+      setFieldErrors({ name: "Name ist zu lang" });
       return;
-   } 
+    }
 
     try {
       const url = editMode
@@ -135,27 +147,23 @@ export default function AdminAuthorsPage() {
 
   const deleteAuthor = async (id: number) => {
     try {
-      const res = await fetch(`/api/authors/${id}`, { method: "DELETE" ,credentials: "include"});
-      let json: any = null;
+      const res = await fetch(`/api/authors/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
 
-   
+      let json: any = null;
       try {
         json = await res.json();
-      } catch {
-        json = null;
-      }
+      } catch {}
 
       if (!res.ok) {
         if (res.status === 409) {
-          setDeleteErrorMsg( "Der Autor kann nicht gelöscht werden (Konflikt).");
+          setDeleteErrorMsg("Der Autor kann nicht gelöscht werden (Konflikt).");
           return;
         }
 
-        if (json?.error?.details?.fieldErrors) {
-          setFieldErrors(json.error.details.fieldErrors);
-        } else {
-          setError(json?.error?.message || "Fehler beim Löschen");
-        }
+        setError(json?.error?.message || "Fehler beim Löschen");
         return;
       }
 
@@ -166,100 +174,157 @@ export default function AdminAuthorsPage() {
     }
   };
 
-  if (loading) return <p>Loading…</p>;
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   if (error)
     return (
-      <Alert severity="error">
-        <AlertTitle>Fehler</AlertTitle>
-        {error}
-      </Alert>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+          p: 3,
+        }}
+      >
+        <Alert severity="error">
+          <AlertTitle>Fehler</AlertTitle>
+          {error}
+        </Alert>
+      </Box>
     );
 
   return (
-    <>
-      <Snackbar open={!!successMsg} autoHideDuration={3000} onClose={closeSuccess}>
-        <Alert severity="success" variant="filled" onClose={closeSuccess}>
-          <AlertTitle>Erfolg</AlertTitle>
-          {successMsg}
-        </Alert>
-      </Snackbar>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+        py: 6,
+        px: 2,
+      }}
+    >
+      <Container maxWidth="lg">
+        <Typography
+          variant="h4"
+          fontWeight={900}
+          color="#fff"
+          sx={{ mb: 3 }}
+        >
+          Autoren verwalten
+        </Typography>
 
-  
-      <Snackbar
-        open={!!deleteErrorMsg}
-        autoHideDuration={4000}
-        onClose={closeDeleteError}
-      >
-        <Alert severity="error" variant="filled" onClose={closeDeleteError}>
-          <AlertTitle>Aktion nicht möglich</AlertTitle>
-          {deleteErrorMsg}
-        </Alert>
-      </Snackbar>
+        <Box
+          sx={{
+            bgcolor: palette.soft,
+            borderRadius: 4,
+            p: 3,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            mb: 4,
+          }}
+        >
+          <TextField
+            label="Nach Autor filtern"
+            value={filterAuthorname}
+            onChange={(e) => setFilterAuthorname(e.target.value)}
+            sx={{
+              my: 2,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 3,
+                backgroundColor: "#fff",
+              },
+            }}
+            fullWidth
+          />
 
-      <Typography variant="h5">Autoren verwalten</Typography>
-      <TextField
-  label="Nach Autor filtern"
-  value={filterAuthorname}
-  onChange={(e) => setFilterAuthorname(e.target.value)}
-  sx={{ my: 2 }}
-  fullWidth
-/>
-      <Button variant="contained" sx={{ my: 2 }} onClick={openCreate}>
-        Neuen Autor erstellen
-      </Button>
+          <Button
+            variant="contained"
+            onClick={openCreate}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              py: 1.2,
+              backgroundColor: palette.primary,
+              "&:hover": { backgroundColor: "#2b3f59" },
+            }}
+          >
+            Neuen Autor erstellen
+          </Button>
 
-      <TableContainer component={Paper} sx={{ mb: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>ID</TableCell>
-              <TableCell>Aktionen</TableCell>
-            </TableRow>
-          </TableHead>
+          <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Name</strong></TableCell>
+                  <TableCell><strong>ID</strong></TableCell>
+                  <TableCell><strong>Aktionen</strong></TableCell>
+                </TableRow>
+              </TableHead>
 
-          <TableBody>
-            {filteredAuthors.map((a) => (
-              <TableRow key={a.id}>
-                <TableCell>{a.name}</TableCell>
-                <TableCell>{a.id}</TableCell>
-                <TableCell>
-                  <Button onClick={() => openEdit(a)} sx={{ mr: 1 }}>
-                    Bearbeiten
-                  </Button>
-                  <Button
-                    color="error"
-                    onClick={() => {
-                      setAuthorToDelete(a);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    Löschen
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+              <TableBody>
+                {filteredAuthors.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell>{a.name}</TableCell>
+                    <TableCell>{a.id}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          onClick={() => openEdit(a)}
+                          variant="outlined"
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Bearbeiten
+                        </Button>
 
-            {authors.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={3}>
-                  <Alert severity="info">Keine Autoren vorhanden.</Alert>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                        <Button
+                          color="error"
+                          variant="contained"
+                          sx={{ borderRadius: 2 }}
+                          onClick={() => {
+                            setAuthorToDelete(a);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          Löschen
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {authors.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      <Alert severity="info">Keine Autoren vorhanden.</Alert>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Container>
 
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{editMode ? "Autor bearbeiten" : "Neuen Autor erstellen"}</DialogTitle>
 
         <DialogContent
-         onKeyDown={(e) => {
-          if (e.key === "Enter") {
-          e.preventDefault();
-          saveAuthor();
-          }
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 3,
+              backgroundColor: "#fff",
+            },
           }}
         >
           <TextField
@@ -281,7 +346,6 @@ export default function AdminAuthorsPage() {
         </DialogActions>
       </Dialog>
 
-      
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Autor löschen?</DialogTitle>
         <DialogContent>
@@ -303,6 +367,24 @@ export default function AdminAuthorsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+
+      <Snackbar open={!!successMsg} autoHideDuration={3000} onClose={() => setSuccessMsg(null)}>
+        <Alert severity="success" variant="filled" onClose={() => setSuccessMsg(null)}>
+          <AlertTitle>Erfolg</AlertTitle>
+          {successMsg}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={!!deleteErrorMsg}
+        autoHideDuration={4000}
+        onClose={() => setDeleteErrorMsg(null)}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setDeleteErrorMsg(null)}>
+          <AlertTitle>Aktion nicht möglich</AlertTitle>
+          {deleteErrorMsg}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }

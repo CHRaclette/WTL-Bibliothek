@@ -19,35 +19,30 @@ import {
   TextField,
   Autocomplete,
   Stack,
+  Box,
+  CircularProgress,
+  Container
 } from "@mui/material";
 import { Navigate, useNavigate } from "react-router-dom";
-import React from "react";
 
 type Author = { id: number; name: string };
-
-type Book = {
-  id: number;
-  title: string;
-  year: number;
-  isbn: string;
-  authors?: Author[];       
-  authorIds?: number[]; 
-};
-
+type Book = { id: number; title: string; year: number; isbn: string; authors?: Author[]; authorIds?: number[] };
 
 export default function AdminBooksPage() {
   const navigate = useNavigate();
+
+  const [user, setUser] = useState<{ id: string; role: string } | null>(null);
+  const [checking, setChecking] = useState(true);
 
   const [books, setBooks] = useState<Book[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -64,53 +59,81 @@ export default function AdminBooksPage() {
   const [filterAuthor, setFilterAuthor] = useState<Author | null>(null);
 
   const currentYear = new Date().getFullYear();
-  const [user, setUser] = React.useState<{ id: string; role: string } | null>(null);
-  const isAdmin = user?.role === "admin";
-if (!isAdmin) {
-    return <Navigate to="/Home" />;
-  }
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const booksRes = await fetch("/api/books", { credentials: "include" });
-      const authorsRes = await fetch("/api/authors", { credentials: "include" });
-  
-  
-      if (booksRes.status === 401 || booksRes.status === 403) {
-        navigate("/");
-        return;
-      }
-  
-      if (!booksRes.ok || !authorsRes.ok) throw new Error("Backend error");
-  
-      setBooks(await booksRes.json());
-      setAuthors(await authorsRes.json());
-      setSuccessMsg("Bücher erfolgreich geladen");
-    } catch (e) {
-      setError((e as any).message);
-    } finally {
-      setLoading(false);
-    }
+
+  const palette = {
+    primary: "#3D5A80",
+    accent: "#98C1D9",
+    soft: "#E0FBFC",
   };
 
   useEffect(() => {
-    loadData();
+    (async () => {
+      try {
+        const res = await fetch("/api/login/me", { credentials: "include" });
+        if (res.ok) setUser(await res.json());
+        else setUser(null);
+      } catch {
+        setUser(null);
+      } finally {
+        setChecking(false);
+      }
+    })();
   }, []);
 
-  const reloadAuthors = async () => {
-    try {
-      const res = await fetch("/api/authors", { credentials: "include" });
-      if (!res.ok) throw new Error("Fehler beim Laden der Autoren");
-      setAuthors(await res.json());
-    } catch (e: any) {
-      console.error(e?.message ?? e);
+  useEffect(() => {
+    if (checking) return;
+    if (!user) return;
+    if (user.role !== "admin") return;
+
+    let cancel = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const booksRes = await fetch("/api/books", { credentials: "include" });
+        const authorsRes = await fetch("/api/authors", { credentials: "include" });
+
+        if (booksRes.status === 401 || booksRes.status === 403) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        if (!booksRes.ok || !authorsRes.ok) throw new Error("Backend Fehler");
+
+        if (!cancel) {
+          setBooks(await booksRes.json());
+          setAuthors(await authorsRes.json());
+        }
+      } catch (e: any) {
+        if (!cancel) setError(e.message);
+      } finally {
+        if (!cancel) setLoading(false);
+      }
+    })();
+
+    return () => { cancel = true };
+  }, [checking, user, navigate]);
+
+  if (checking) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin") return <Navigate to="/Home" replace />;
+
+  const filteredBooks = books.filter((b) => {
+    if (filterTitle.trim() && !b.title.toLowerCase().includes(filterTitle.toLowerCase()))
+      return false;
+
+    if (filterAuthor) {
+      const has = Array.isArray(b.authors)
+        ? b.authors.some((a) => a.id === filterAuthor.id)
+        : b.authorIds?.includes(filterAuthor.id);
+
+      if (!has) return false;
     }
-  };
-  
+    return true;
+  });
+
   const openCreateModal = () => {
-    reloadAuthors(); 
     setEditMode(false);
-     
     setSelectedBook(null);
     setFieldErrors({});
     setTitle("");
@@ -120,50 +143,17 @@ if (!isAdmin) {
     setOpen(true);
   };
 
-  const openEditModal = (book: Book) => {
-    reloadAuthors();
+  const openEditModal = (b: Book) => {
     setEditMode(true);
-    setSelectedBook(book);
+    setSelectedBook(b);
     setFieldErrors({});
-    setTitle(book.title);
-    setYear(String(book.year));
-    setIsbn(book.isbn);
-  
-    const preselected = Array.isArray(book.authors)
-      ? book.authors
-      : authors.filter(a => book.authorIds?.includes(a.id) ?? false);
-  
-    setSelectedAuthorList(preselected);
+    setTitle(b.title);
+    setYear(String(b.year));
+    setIsbn(b.isbn);
+    setSelectedAuthorList(Array.isArray(b.authors) ? b.authors : []);
     setOpen(true);
   };
 
-  function formatISBN(raw: string): string {
-    const digits = raw.replace(/\D/g, "");
-    const p1 = digits.substring(0, 3);
-    const p2 = digits.substring(3, 4);
-    const p3 = digits.substring(4, 8);
-    const p4 = digits.substring(8, 12);
-    const p5 = digits.substring(12, 13);
-
-    let f = p1;
-    if (p2) f += `-${p2}`;
-    if (p3) f += `-${p3}`;
-    if (p4) f += `-${p4}`;
-    if (p5) f += `-${p5}`;
-    return f;
-  }
-  const filteredBooks = books.filter(b => {
-    if (filterTitle.trim() !== "" &&
-        !b.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
-  
-    if (filterAuthor) {
-      const hasAuthor = Array.isArray(b.authors)
-        ? b.authors.some(a => a.id === filterAuthor.id)
-        : (b.authorIds?.includes(filterAuthor.id) ?? false);
-      if (!hasAuthor) return false;
-    }
-    return true;
-  });
   const saveBook = async () => {
     setFieldErrors({});
 
@@ -176,12 +166,11 @@ if (!isAdmin) {
       setFieldErrors({ isbn: "ISBN muss 13 Ziffern enthalten." });
       return;
     }
-    
-    if (title.length >= 100) {
-       setFieldErrors( {title: "Titel ist zu lang"});
-       return;
-    } 
 
+    if (title.length >= 100) {
+      setFieldErrors({ title: "Titel ist zu lang" });
+      return;
+    }
 
     if (selectedAuthorList.length === 0) {
       setFieldErrors({ authorIds: "Bitte mindestens einen Autor auswählen." });
@@ -219,7 +208,7 @@ if (!isAdmin) {
 
       setOpen(false);
       setSuccessMsg(editMode ? "Buch aktualisiert!" : "Buch erstellt!");
-      loadData();
+      window.location.reload();
     } catch (e: any) {
       setError(e.message);
     }
@@ -227,183 +216,220 @@ if (!isAdmin) {
 
   const deleteBook = async (id: number) => {
     try {
-      const res = await fetch(`/api/books/${id}`, { method: "DELETE",credentials: "include" });
+      const res = await fetch(`/api/books/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
 
       let json: any = null;
-      try {
-        json = await res.json();
-      } catch {}
+      try { json = await res.json() } catch {}
 
       if (!res.ok) {
         if (res.status === 409) {
-          const msg = json?.error?.message || "Buch kann nicht gelöscht werden.";
-          setDeleteErrorMsg(msg);
+          setDeleteErrorMsg(json?.error?.message || "Buch kann nicht gelöscht werden.");
           return;
         }
-
         setError(json?.error?.message || "Fehler beim Löschen");
         return;
       }
 
       setSuccessMsg("Buch gelöscht!");
-      loadData();
+      window.location.reload();
     } catch (e: any) {
       setError(e.message);
     }
   };
 
-  if (loading) return <p>Loading…</p>;
+  if (loading) {
+    return (
+      <Box sx={{
+        minHeight: "100vh",
+        background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <>
-      <Snackbar
-        open={!!successMsg}
-        autoHideDuration={2000}
-        onClose={() => setSuccessMsg(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert severity="success" variant="filled" onClose={() => setSuccessMsg(null)}>
-          <AlertTitle>Erfolg</AlertTitle>
-          {successMsg}
-        </Alert>
-      </Snackbar>
+    <Box sx={{
+      minHeight: "100vh",
+      background: `linear-gradient(160deg, ${palette.accent}, ${palette.primary})`,
+      py: 6,
+      px: 2
+    }}>
+      <Container maxWidth="lg">
 
-      <Snackbar
-        open={!!deleteErrorMsg}
-        autoHideDuration={3000}
-        onClose={() => setDeleteErrorMsg(null)}
-      >
-        <Alert severity="error" variant="filled" onClose={() => setDeleteErrorMsg(null)}>
-          <AlertTitle>Aktion nicht möglich</AlertTitle>
-          {deleteErrorMsg}
-        </Alert>
-      </Snackbar>
+        <Typography variant="h4" fontWeight={900} color="#fff" sx={{ mb: 3 }}>
+          Bücher verwalten
+        </Typography>
 
-      <Typography variant="h5">Bücher verwalten</Typography>
-      <Paper sx={{ p: 2, my: 2 }}>
+        <Box sx={{
+          bgcolor: palette.soft,
+          borderRadius: 4,
+          p: 3,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.25)"
+        }}>
+
+<Paper
+  sx={{
+    p: 2,
+    mb: 3,
+    borderRadius: 3,
+    backgroundColor: "#fff",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.09)",
+  }}
+>
   <Stack
     direction={{ xs: "column", sm: "row" }}
     spacing={2}
     alignItems="center"
   >
     <TextField
-      label="Titel Suchen"
+      fullWidth
+      label="Titel suchen"
       value={filterTitle}
       onChange={(e) => setFilterTitle(e.target.value)}
-      fullWidth
+      sx={{
+        "& .MuiOutlinedInput-root": {
+          borderRadius: 3,
+          backgroundColor: "#fff",
+        },
+      }}
     />
 
     <Autocomplete
       options={authors}
-      getOptionLabel={(a) => a.name}
       value={filterAuthor}
       onChange={(_, v) => setFilterAuthor(v)}
+      getOptionLabel={(a) => a.name}
       renderInput={(params) => (
-        <TextField {...params} label="Autor auswählen" />
+        <TextField
+          {...params}
+          label="Autor auswählen"
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 3,
+              backgroundColor: "#fff",
+            },
+          }}
+        />
       )}
-      sx={{ width: 250 }}
+      sx={{
+        width: 260,
+      }}
     />
   </Stack>
 </Paper>
-      <Button variant="contained" sx={{ my: 2 }} onClick={openCreateModal}>
-        Neues Buch erstellen
-      </Button>
 
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Titel</TableCell>
-              <TableCell>ISBN</TableCell>
-              <TableCell>Jahr</TableCell>
-              <TableCell>Autoren</TableCell>
-              <TableCell>Aktionen</TableCell>
-            </TableRow>
-          </TableHead>
+          <Button
+            variant="contained"
+            onClick={openCreateModal}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              py: 1.2,
+              backgroundColor: palette.primary,
+              "&:hover": { backgroundColor: "#2b3f59" }
+            }}
+          >
+            Neues Buch erstellen
+          </Button>
 
-          <TableBody>
-            {filteredBooks.map((b) => (
-              <TableRow key={b.id}>
-                <TableCell>{b.title}</TableCell>
-                <TableCell>{b.isbn}</TableCell>
-                <TableCell>{b.year}</TableCell>
-                <TableCell>
-                  {Array.isArray(b.authors)
-                   ? b.authors.map(a => a.name).join(", ")
-                   : "Keine Autoren"}
-                </TableCell>
-                <TableCell>
-                  <Button sx={{ mr: 1 }} onClick={() => openEditModal(b)}>
-                    Bearbeiten
-                  </Button>
+          <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Titel</strong></TableCell>
+                  <TableCell><strong>ISBN</strong></TableCell>
+                  <TableCell><strong>Jahr</strong></TableCell>
+                  <TableCell><strong>Autoren</strong></TableCell>
+                  <TableCell><strong>Aktionen</strong></TableCell>
+                </TableRow>
+              </TableHead>
 
-                  <Button
-                    color="error"
-                    onClick={() => {
-                      setBookToDelete(b);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    Löschen
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+              <TableBody>
+                {filteredBooks.map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell>{b.title}</TableCell>
+                    <TableCell>{b.isbn}</TableCell>
+                    <TableCell>{b.year}</TableCell>
+                    <TableCell>
+                      {Array.isArray(b.authors)
+                        ? b.authors.map(a => a.name).join(", ")
+                        : "Keine Autoren"}
+                    </TableCell>
 
-            {books.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  <Alert severity="info">Keine Bücher vorhanden.</Alert>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          onClick={() => openEditModal(b)}
+                          variant="outlined"
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Bearbeiten
+                        </Button>
+
+                        <Button
+                          color="error"
+                          variant="contained"
+                          onClick={() => {
+                            setBookToDelete(b);
+                            setDeleteDialogOpen(true);
+                          }}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Löschen
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {books.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <Alert severity="info">Keine Bücher vorhanden.</Alert>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Container>
+
+      {/* Dialogs */}
 
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{editMode ? "Buch bearbeiten" : "Neues Buch erstellen"}</DialogTitle>
+        <DialogContent>
 
-        <DialogContent  
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-          e.preventDefault();
-          saveBook();
-          }
-          }}>
-          <TextField
-            fullWidth
-            label="Titel"
-            value={title}
+          <TextField fullWidth label="Titel" value={title}
             onChange={(e) => setTitle(e.target.value)}
             error={!!fieldErrors.title}
             helperText={fieldErrors.title}
-            sx={{ mt: 1 }}
+            sx={{ mt: 2 }}
           />
 
-          <TextField
-            fullWidth
-            label="Jahr"
-            value={year}
+          <TextField fullWidth label="Jahr" value={year}
             onChange={(e) => {
               const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
               setYear(raw);
             }}
-            inputProps={{ maxLength: 4 }}
             error={!!fieldErrors.year}
             helperText={fieldErrors.year}
             sx={{ mt: 2 }}
           />
 
-          <TextField
-            fullWidth
-            label="ISBN"
-            value={isbn}
+          <TextField fullWidth label="ISBN" value={isbn}
             onChange={(e) => {
               const raw = e.target.value.replace(/\D/g, "");
-              setIsbn(formatISBN(raw));
+              setIsbn(raw);
             }}
-            inputProps={{ maxLength: 17 }}
             error={!!fieldErrors.isbn}
             helperText={fieldErrors.isbn}
             sx={{ mt: 2 }}
@@ -412,9 +438,9 @@ if (!isAdmin) {
           <Autocomplete
             multiple
             options={authors}
-            getOptionLabel={(a) => a.name}
             value={selectedAuthorList}
             onChange={(_, v) => setSelectedAuthorList(v)}
+            getOptionLabel={(a) => a.name}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -425,13 +451,12 @@ if (!isAdmin) {
               />
             )}
           />
+
         </DialogContent>
 
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Abbrechen</Button>
-          <Button variant="contained" onClick={saveBook}>
-            {editMode ? "Speichern" : "Erstellen"}
-          </Button>
+          <Button variant="contained" onClick={saveBook}>Speichern</Button>
         </DialogActions>
       </Dialog>
 
@@ -446,17 +471,16 @@ if (!isAdmin) {
           <Button
             color="error"
             variant="contained"
-            onClick={async () => {
+            onClick={() => {
               if (!bookToDelete) return;
-              await deleteBook(bookToDelete.id);
+              deleteBook(bookToDelete.id);
               setDeleteDialogOpen(false);
-              setBookToDelete(null);
             }}
           >
             Löschen
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }
