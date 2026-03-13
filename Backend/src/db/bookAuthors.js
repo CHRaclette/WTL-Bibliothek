@@ -32,4 +32,3 @@ exports.add = (bookId, authorId) => {
 exports.remove = (id) => {
   return db.prepare("DELETE FROM books WHERE id = ?").run(id);
 };
-``

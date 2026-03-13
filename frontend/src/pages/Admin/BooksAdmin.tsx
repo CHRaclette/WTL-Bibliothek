@@ -20,7 +20,8 @@ import {
   Autocomplete,
   Stack,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import React from "react";
 
 type Author = { id: number; name: string };
 
@@ -63,18 +64,30 @@ export default function AdminBooksPage() {
   const [filterAuthor, setFilterAuthor] = useState<Author | null>(null);
 
   const currentYear = new Date().getFullYear();
-
+  const [user, setUser] = React.useState<{ id: string; role: string } | null>(null);
+  const isAdmin = user?.role === "admin";
+if (!isAdmin) {
+    return <Navigate to="/Home" />;
+  }
   const loadData = async () => {
     setLoading(true);
     try {
-      const booksRes = await fetch("/api/books");
-      const authorsRes = await fetch("/api/authors");
+      const booksRes = await fetch("/api/books", { credentials: "include" });
+      const authorsRes = await fetch("/api/authors", { credentials: "include" });
+  
+  
+      if (booksRes.status === 401 || booksRes.status === 403) {
+        navigate("/");
+        return;
+      }
+  
       if (!booksRes.ok || !authorsRes.ok) throw new Error("Backend error");
+  
       setBooks(await booksRes.json());
       setAuthors(await authorsRes.json());
       setSuccessMsg("Bücher erfolgreich geladen");
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError((e as any).message);
     } finally {
       setLoading(false);
     }
@@ -86,7 +99,7 @@ export default function AdminBooksPage() {
 
   const reloadAuthors = async () => {
     try {
-      const res = await fetch("/api/authors");
+      const res = await fetch("/api/authors", { credentials: "include" });
       if (!res.ok) throw new Error("Fehler beim Laden der Autoren");
       setAuthors(await res.json());
     } catch (e: any) {
@@ -190,6 +203,7 @@ export default function AdminBooksPage() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        credentials: "include",
       });
 
       const json = await res.json();
@@ -213,7 +227,7 @@ export default function AdminBooksPage() {
 
   const deleteBook = async (id: number) => {
     try {
-      const res = await fetch(`/api/books/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/books/${id}`, { method: "DELETE",credentials: "include" });
 
       let json: any = null;
       try {
@@ -350,7 +364,13 @@ export default function AdminBooksPage() {
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{editMode ? "Buch bearbeiten" : "Neues Buch erstellen"}</DialogTitle>
 
-        <DialogContent>
+        <DialogContent  
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+          e.preventDefault();
+          saveBook();
+          }
+          }}>
           <TextField
             fullWidth
             label="Titel"

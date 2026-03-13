@@ -3,69 +3,94 @@ import Toolbar from "@mui/material/Toolbar";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import BugReportIcon from "@mui/icons-material/BugReport";
+import React from "react";
 
 export function Header() {
   const navigate = useNavigate();
+  const location = useLocation(); 
+  const [user, setUser] = React.useState<{ id: string; role: string } | null>(null);
 
-  const goHome = () => navigate("/");
+ 
+  const loadMe = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/login/me", { credentials: "include" });
+      setUser(res.ok ? await res.json() : null);
+    } catch {
+      setUser(null);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadMe();
+  }, [loadMe]);
+
+  React.useEffect(() => {
+    loadMe();
+  }, [location.pathname, loadMe]);
+
+  const isLoggedIn = !!user;
+  const isAdmin = user?.role === "admin";
+
+  const handleLogout = async () => {
+    await fetch("/api/login", { method: "DELETE", credentials: "include" });
+    setUser(null);        
+    navigate("/");      
+  };
+
+  const goHome = () => navigate("/home");
   const goBooks = () => navigate("/books");
   const goAdmin = () => navigate("/admin");
+  const goLogin = () => navigate("/");
 
   return (
     <AppBar position="static" sx={{ mb: 3 }}>
       <Toolbar sx={{ display: "flex", alignItems: "center" }}>
-        
         <Typography
           variant="h6"
           onClick={goHome}
-          sx={{
-            flexGrow: 1,
-            fontWeight: 700,
-            cursor: "pointer",
-            userSelect: "none",
-          }}
+          sx={{ flexGrow: 1, fontWeight: 700, cursor: "pointer", userSelect: "none" }}
         >
           Bibliothek
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1 }}>
-          
           <Button
             variant="outlined"
             color="inherit"
             startIcon={<GitHubIcon />}
             href="https://github.com/CHRaclette/WTL-Bibliothek"
             target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              borderColor: "rgba(255,255,255,0.5)",
-              "&:hover": { borderColor: "white", backgroundColor: "rgba(255,255,255,0.1)" }
-            }}
+
           >
             Repo
           </Button>
+
           <Button
             variant="outlined"
             color="inherit"
             startIcon={<BugReportIcon />}
             href="https://github.com/CHRaclette/WTL-Bibliothek/issues"
             target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              borderColor: "rgba(255,255,255,0.5)",
-              "&:hover": { borderColor: "white", backgroundColor: "rgba(255,255,255,0.1)" }
-            }}
           >
             Bugs
           </Button>
+
           <Button color="inherit" onClick={goHome}>Home</Button>
           <Button color="inherit" onClick={goBooks}>Bücher</Button>
-          <Button color="inherit" onClick={goAdmin}>Admin</Button>
-        </Box>
 
+          {isAdmin && (
+            <Button color="inherit" onClick={goAdmin}>Admin</Button>
+          )}
+
+          {isLoggedIn ? (
+            <Button color="inherit" onClick={handleLogout}>Logout</Button>
+          ) : (
+            <Button color="inherit" onClick={goLogin}>Login</Button>
+          )}
+        </Box>
       </Toolbar>
     </AppBar>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Navigate, redirect, Link as RouterLink, useNavigate } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -18,6 +18,7 @@ import {
   Stack,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import React from "react";
 
 type Book = {
   id: number;
@@ -29,6 +30,25 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+
+  const navigate = useNavigate();
+  const [user, setUser] = React.useState<{ id: string; role: string } | null>(null);
+  const isLoggedIn = user?.role != null;
+  if (isLoggedIn) {
+    return <Navigate to="/" />;
+  }
+  
+  async function checkLogin() {
+    try {
+      const res = await fetch("/api/login/", { credentials: "include" });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+
 
   useEffect(() => {
     (async () => {
@@ -42,6 +62,7 @@ export function HomePage() {
           } catch {}
           throw new Error(msg);
         }
+
         const data: Book[] = await res.json();
         setBooks(Array.isArray(data) ? data : []);
       } catch (e: any) {
@@ -51,6 +72,9 @@ export function HomePage() {
       }
     })();
   }, []);
+
+
+  
 
   const filteredBooks = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -219,4 +243,3 @@ export function HomePage() {
     </Container>
   );
 }
-``

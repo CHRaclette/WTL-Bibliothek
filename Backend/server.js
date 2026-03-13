@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-
+var cookieParser = require('cookie-parser')
+app.use(cookieParser())
 const { notFound, errorHandler } = require('./src/middleware/error');
 
 app.use(express.json());
@@ -18,10 +19,13 @@ require("./src/data/structure")
 require("./src/data/seeder")
 
 
+
 //routing
 app.use("/api/books", require("../Backend/src/routes/books"));
 app.use("/api/authors", require("../Backend/src/routes/authors"));
-
+app.use("/api/users", require("../Backend/src/routes/users"));
+app.use("/api/login", require("../Backend/src/routes/login"));
+  
 //healht check
 app.get('/api/health', (req, res) => {
   res.status(200).send('OK');

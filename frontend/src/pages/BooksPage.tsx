@@ -15,6 +15,8 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { BookCard } from '../components/BookCard';
+import { Navigate, useNavigate } from 'react-router-dom';
+import React from 'react';
 type Author = {
   id: number;
   name: string;
@@ -29,6 +31,7 @@ type Book = {
   authors?: Author[];
 };
 
+
 function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
@@ -37,6 +40,11 @@ function BooksPage() {
 
   const [filterTitle, setFilterTitle] = useState('');
   const [filterAuthor, setFilterAuthor] = useState<Author | null>(null);
+  const [user, setUser] = React.useState<{ id: string; role: string } | null>(null);
+  const isLoggedIn = user?.role != null;
+  if (isLoggedIn) {
+    return <Navigate to="/" />;
+  }
 
   useEffect(() => {
     let cancelled = false;

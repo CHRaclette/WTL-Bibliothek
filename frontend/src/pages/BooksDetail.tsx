@@ -17,10 +17,9 @@ type Book = {
   authors?: Author[];
 };
 
-
 function BookDetailsPage() {
   const navigate = useNavigate();
-  const goHome = () => navigate("/");
+  const goHome = () => navigate("/Home");
 
   const { id } = useParams();
   const [book, setBook] = useState<Book | null>(null);
@@ -34,6 +33,7 @@ function BookDetailsPage() {
         setLoading(false);
         return;
       }
+      
       const data: Book = await res.json();
       setBook(data);
       setLoading(false);

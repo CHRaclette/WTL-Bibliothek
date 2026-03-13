@@ -42,7 +42,7 @@ export default function AdminAuthorsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/authors");
+      const res = await fetch("/api/authors", {credentials: "include"});
       if (!res.ok) throw new Error("Backend Error");
       setAuthors(await res.json());
     } catch (e: any) {
@@ -96,6 +96,7 @@ export default function AdminAuthorsPage() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: authorName }),
+        credentials: "include",
       });
 
       const json = await res.json();
@@ -119,7 +120,7 @@ export default function AdminAuthorsPage() {
 
   const deleteAuthor = async (id: number) => {
     try {
-      const res = await fetch(`/api/authors/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/authors/${id}`, { method: "DELETE" ,credentials: "include"});
       let json: any = null;
 
    
@@ -235,11 +236,17 @@ export default function AdminAuthorsPage() {
         </Table>
       </TableContainer>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{editMode ? "Autor bearbeiten" : "Neuen Autor erstellen"}</DialogTitle>
 
-        <DialogContent>
+        <DialogContent
+         onKeyDown={(e) => {
+          if (e.key === "Enter") {
+          e.preventDefault();
+          saveAuthor();
+          }
+          }}
+        >
           <TextField
             fullWidth
             label="Name"

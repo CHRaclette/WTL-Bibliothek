@@ -5,13 +5,14 @@ const BookAuthors = require("../db/bookAuthors");
 
 exports.getAuthors = catchAsync((req, res) => {
   let result = Authors.getAll();
-
   const { name } = req.query;
+
+
   if (name) {
     const lower = name.toLowerCase();
     result = result.filter(a => a.name.toLowerCase().includes(lower));
   }
-
+  
   res.json(result);
 });
 
